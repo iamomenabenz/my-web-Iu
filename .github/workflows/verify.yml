@@ -1,0 +1,66 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - work
+      - m5-remote-agent-foundation
+
+permissions:
+  contents: read
+
+jobs:
+  root-app:
+    name: Root app verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.2.14'
+
+      - name: Install root dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck root app
+        run: bun run typecheck
+
+      - name: Build root app
+        run: bun run build
+
+      - name: Lint root app
+        run: bun run lint
+
+  server-agent:
+    name: Server-agent verification
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+
+      - name: Install server-agent dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck server-agent
+        run: npm run typecheck
+
+      - name: Build server-agent
+        run: npm run build

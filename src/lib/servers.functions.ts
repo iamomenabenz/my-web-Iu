@@ -98,5 +98,11 @@ export const healthCheckServer = createServerFn({ method: "POST" })
         last_seen_at: res.ok ? new Date().toISOString() : undefined,
       })
       .eq("id", data.id);
+    await supabaseAdmin.from("audit_log").insert({
+      actor: context.userId,
+      action: "server.health_check",
+      target: data.id,
+      payload: { ok: res.ok, status, http_status: res.status, error: res.error ?? null } as never,
+    });
     return { ok: res.ok, status, error: res.error, data: res.data };
   });

@@ -4,10 +4,10 @@
 // inside a server-fn / server-route handler.
 //
 // Daemon contract (the user runs this themselves on their own host):
-//   GET  {daemon_url}/health                                   -> { ok: true, version, uptime }
-//   POST {daemon_url}/exec     { command, cwd?, timeoutMs? }   -> { exitCode, stdout, stderr, durationMs }
-//   POST {daemon_url}/fs/read  { path }                        -> { path, content, truncated? }
-//   POST {daemon_url}/fs/write { path, content }               -> { path, bytes }
+//   GET  {daemon_url}/health                                   -> { ok: true, version, uptimeMs }
+//   POST {daemon_url}/commands/run { command, cwd?, timeoutMs? } -> { commandId, exitCode, stdout, stderr, durationMs }
+//   POST {daemon_url}/files/read   { path }                    -> { path, content, truncated? }
+//   POST {daemon_url}/files/write  { path, content }           -> { path, bytes }
 // All requests carry: Authorization: Bearer <daemon_token>.
 
 export interface DaemonConfig {
@@ -71,7 +71,7 @@ async function daemonFetch<T>(
 }
 
 export function daemonHealth(cfg: DaemonConfig) {
-  return daemonFetch<{ ok: boolean; version?: string; uptime?: number }>(
+  return daemonFetch<{ ok: boolean; version?: string; uptimeMs?: number }>(
     cfg,
     "/health",
     { method: "GET" },
@@ -87,7 +87,8 @@ export function daemonExec(
     stdout: string;
     stderr: string;
     durationMs: number;
-  }>(cfg, "/exec", {
+    commandId?: string;
+  }>(cfg, "/commands/run", {
     method: "POST",
     body: JSON.stringify({
       command: input.command,
@@ -100,7 +101,7 @@ export function daemonExec(
 export function daemonReadFile(cfg: DaemonConfig, input: { path: string }) {
   return daemonFetch<{ path: string; content: string; truncated?: boolean }>(
     cfg,
-    "/fs/read",
+    "/files/read",
     { method: "POST", body: JSON.stringify(input) },
   );
 }
@@ -109,9 +110,59 @@ export function daemonWriteFile(
   cfg: DaemonConfig,
   input: { path: string; content: string },
 ) {
-  return daemonFetch<{ path: string; bytes: number }>(cfg, "/fs/write", {
+  return daemonFetch<{ path: string; bytes: number }>(cfg, "/files/write", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export function daemonDeleteFile(cfg: DaemonConfig, input: { path: string }) {
+  return daemonFetch<{ path: string; deleted: boolean }>(cfg, "/files/delete", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function daemonListFiles(cfg: DaemonConfig, input: { path?: string; limit?: number } = {}) {
+  const query = new URLSearchParams();
+  if (input.path) query.set("path", input.path);
+  if (input.limit) query.set("limit", String(input.limit));
+  const qs = query.toString();
+  return daemonFetch<{ root: string; path: string; entries: unknown[] }>(
+    cfg,
+    `/files/list${qs ? `?${qs}` : ""}`,
+    { method: "GET" },
+  );
+}
+
+export function daemonSearchFiles(
+  cfg: DaemonConfig,
+  input: { query: string; path?: string; limit?: number },
+) {
+  return daemonFetch<{ matches: unknown[] }>(cfg, "/files/search", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function daemonWorkspaceInfo(cfg: DaemonConfig) {
+  return daemonFetch<{ root: string; writable: boolean }>(cfg, "/workspace/info", { method: "GET" });
+}
+
+export function daemonStopCommand(cfg: DaemonConfig, input: { commandId: string }) {
+  return daemonFetch<{ commandId: string; stopped: boolean }>(cfg, "/commands/stop", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function daemonLogs(cfg: DaemonConfig, input: { commandId?: string; limit?: number } = {}) {
+  const query = new URLSearchParams();
+  if (input.commandId) query.set("commandId", input.commandId);
+  if (input.limit) query.set("limit", String(input.limit));
+  const qs = query.toString();
+  return daemonFetch<{ logs: unknown[] }>(cfg, `/commands/logs${qs ? `?${qs}` : ""}`, {
+    method: "GET",
   });
 }
 

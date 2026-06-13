@@ -1,5 +1,12 @@
 # Omena Codex
 
+## Runtime requirements
+
+- Node.js >= 22.12.0 (see `.node-version` / `.nvmrc`).
+- Bun 1.2.x is the primary Lovable/TanStack package manager for this repo (`bun.lock` + `bunfig.toml`).
+- `package-lock.json` is kept in sync for npm-based CI compatibility, but prefer `bun install` for local Lovable workflows.
+
+
 A production-ready, mobile-first operator console for AI engineering agents.
 Built with **TanStack Start**, **React 19**, **Vite 7**, **Tailwind v4**, and **Bun**.
 Fully self-hostable — clone, configure, deploy.

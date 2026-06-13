@@ -7,8 +7,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classifyRisk, summarizeInput, type ToolName } from "./risk";
 import {
+  daemonDeleteFile,
   daemonExec,
+  daemonListFiles,
+  daemonLogs,
   daemonReadFile,
+  daemonSearchFiles,
+  daemonWorkspaceInfo,
   daemonWriteFile,
   resolveDaemonConfig,
   type DaemonConfig,
@@ -177,15 +182,15 @@ async function runSafe(
     };
   }
 
-  if (tool === "read_file") {
-    // Safe reads can run inline against the remote agent if configured.
+  if (["read_file", "list_files", "search_files", "get_workspace_info", "get_logs"].includes(tool)) {
     if (ctx.adapterMode === "remote-agent") {
       const cfg = await resolveDaemonConfig(ctx.workspaceId);
-      if (cfg) return runReadRemote(cfg, input, ctx, summary);
+      if (cfg) return runReadOnlyRemote(tool, cfg, input, ctx, summary);
     }
     return mockOrDryRun(tool, input, ctx, summary, "safe", {
-      path: input.path,
-      content: `// [mock] Contents of ${input.path} would appear here. Configure a server-agent in Settings → Servers to enable real reads.`,
+      tool,
+      input,
+      note: "Configure an enabled linked remote-agent server for real workspace reads.",
     });
   }
 
@@ -221,6 +226,7 @@ export async function executeApproved(
     if (tool === "run_command") return runExecRemote(cfg, input, ctx, summary);
     if (tool === "read_file") return runReadRemote(cfg, input, ctx, summary);
     if (tool === "write_file") return runWriteRemote(cfg, input, ctx, summary);
+    if (tool === "delete_file") return runDeleteRemote(cfg, input, ctx, summary);
   }
 
   return mockOrDryRun(tool, input, ctx, summary, risk, {
@@ -228,6 +234,31 @@ export async function executeApproved(
     input,
     note: "Approval recorded. Configure a remote-agent server in Settings → Servers for real execution.",
   });
+}
+
+async function runReadOnlyRemote(
+  tool: ToolName,
+  cfg: DaemonConfig,
+  input: Record<string, unknown>,
+  ctx: ExecContext,
+  summary: string,
+): Promise<ToolResult> {
+  if (tool === "read_file") return runReadRemote(cfg, input, ctx, summary);
+  const path = typeof input.path === "string" ? input.path : undefined;
+  const query = String(input.query ?? "");
+  const commandId = typeof input.commandId === "string" ? input.commandId : undefined;
+  const limit = typeof input.limit === "number" ? input.limit : undefined;
+  const r =
+    tool === "list_files"
+      ? await daemonListFiles(cfg, { path, limit })
+      : tool === "search_files"
+        ? await daemonSearchFiles(cfg, { query, path, limit })
+        : tool === "get_workspace_info"
+          ? await daemonWorkspaceInfo(cfg)
+          : await daemonLogs(cfg, { commandId, limit });
+  await audit(ctx, `tool.${tool}.remote`, "daemon", { summary, ok: r.ok });
+  if (!r.ok) return { ok: false, mode: "remote-agent", risk: "safe", summary, note: r.error };
+  return { ok: true, mode: "remote-agent", risk: "safe", summary, data: r.data };
 }
 
 async function runExecRemote(
@@ -275,6 +306,18 @@ async function runWriteRemote(
     content: String(input.content ?? ""),
   });
   await audit(ctx, "tool.write_file.remote", "daemon", { summary, ok: r.ok });
+  if (!r.ok) return { ok: false, mode: "remote-agent", risk: "restricted", summary, note: r.error };
+  return { ok: true, mode: "remote-agent", risk: "restricted", summary, data: r.data };
+}
+
+async function runDeleteRemote(
+  cfg: DaemonConfig,
+  input: Record<string, unknown>,
+  ctx: ExecContext,
+  summary: string,
+): Promise<ToolResult> {
+  const r = await daemonDeleteFile(cfg, { path: String(input.path ?? "") });
+  await audit(ctx, "tool.delete_file.remote", "daemon", { summary, ok: r.ok });
   if (!r.ok) return { ok: false, mode: "remote-agent", risk: "restricted", summary, note: r.error };
   return { ok: true, mode: "remote-agent", risk: "restricted", summary, data: r.data };
 }
