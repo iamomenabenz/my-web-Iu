@@ -202,13 +202,28 @@ function SettingsPage() {
 
       <Section title="Control plane">
         <Link to="/control-plane" className="block">
-          <Row icon={Cpu} label="Control Plane" hint="Providers, servers, workspaces, DBs, storage, APIs" right={<ChevronRight className="h-4 w-4" />} />
+          <Row
+            icon={Cpu}
+            label="Control Plane"
+            hint="Providers, servers, workspaces, DBs, storage, APIs"
+            right={<ChevronRight className="h-4 w-4" />}
+          />
         </Link>
         <Link to="/approvals" className="block">
-          <Row icon={ShieldCheck} label="Approval queue" hint="Review pending agent actions" right={<ChevronRight className="h-4 w-4" />} />
+          <Row
+            icon={ShieldCheck}
+            label="Approval queue"
+            hint="Review pending agent actions"
+            right={<ChevronRight className="h-4 w-4" />}
+          />
         </Link>
         <Link to="/servers" className="block">
-          <Row icon={Cpu} label="Servers" hint="Register self-hosted agent daemons" right={<ChevronRight className="h-4 w-4" />} />
+          <Row
+            icon={Cpu}
+            label="Servers"
+            hint="Register self-hosted agent daemons"
+            right={<ChevronRight className="h-4 w-4" />}
+          />
         </Link>
       </Section>
 

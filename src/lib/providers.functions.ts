@@ -107,8 +107,10 @@ export const testProvider = createServerFn({ method: "POST" })
         if (key) headers["x-api-key"] = key;
         headers["anthropic-version"] = "2023-06-01";
       } else if (row.kind === "google") {
-        url = (row.base_url || "https://generativelanguage.googleapis.com/v1beta") +
-          "/models?key=" + encodeURIComponent(key);
+        url =
+          (row.base_url || "https://generativelanguage.googleapis.com/v1beta") +
+          "/models?key=" +
+          encodeURIComponent(key);
       } else if (row.kind === "ollama") {
         url = (row.base_url || "http://localhost:11434") + "/api/tags";
       } else {
@@ -125,8 +127,14 @@ export const testProvider = createServerFn({ method: "POST" })
         if (res.ok) {
           status = "ok";
           try {
-            const json = (await res.json()) as { data?: { id: string }[]; models?: { name: string }[] };
-            models = (json.data?.map((m) => m.id) ?? json.models?.map((m) => m.name) ?? []).slice(0, 50);
+            const json = (await res.json()) as {
+              data?: { id: string }[];
+              models?: { name: string }[];
+            };
+            models = (json.data?.map((m) => m.id) ?? json.models?.map((m) => m.name) ?? []).slice(
+              0,
+              50,
+            );
           } catch {
             /* ignore */
           }

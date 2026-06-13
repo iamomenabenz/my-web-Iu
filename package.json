@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.48",
@@ -97,5 +98,9 @@
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.8",
     "workbox-window": "^7.4.1"
+  },
+  "packageManager": "bun@1.2.14",
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

@@ -7,6 +7,11 @@ export type ToolName =
   | "web_search"
   | "read_file"
   | "write_file"
+  | "delete_file"
+  | "list_files"
+  | "search_files"
+  | "get_workspace_info"
+  | "get_logs"
   | "run_command";
 
 const DANGEROUS_PATH_PATTERNS = [
@@ -53,11 +58,26 @@ export function classifyRisk({ tool, input }: RiskInput): {
   if (tool === "web_search")
     return { risk: "safe", reason: "External web lookup, no workspace mutation." };
 
+  if (
+    tool === "list_files" ||
+    tool === "search_files" ||
+    tool === "get_workspace_info" ||
+    tool === "get_logs"
+  )
+    return { risk: "safe", reason: "Read-only remote-agent operation." };
+
   if (tool === "read_file") {
     const path = String(input.path ?? "");
     if (DANGEROUS_PATH_PATTERNS.some((r) => r.test(path)))
       return { risk: "dangerous", reason: `Reads a sensitive path (${path}).` };
     return { risk: "safe", reason: "Read-only access to workspace file." };
+  }
+
+  if (tool === "delete_file") {
+    const path = String(input.path ?? "");
+    if (DANGEROUS_PATH_PATTERNS.some((r) => r.test(path)))
+      return { risk: "dangerous", reason: `Deletes a sensitive path (${path}).` };
+    return { risk: "restricted", reason: "Deletes a workspace file." };
   }
 
   if (tool === "write_file") {
@@ -86,7 +106,15 @@ export function summarizeInput(tool: ToolName, input: Record<string, unknown>): 
     case "web_search":
       return String(input.query ?? "").slice(0, 120);
     case "read_file":
-      return String(input.path ?? "");
+    case "delete_file":
+    case "list_files":
+      return String(input.path ?? ".");
+    case "search_files":
+      return `${input.query ?? ""} in ${input.path ?? "."}`;
+    case "get_workspace_info":
+      return "workspace info";
+    case "get_logs":
+      return String(input.commandId ?? "recent logs");
     case "write_file": {
       const len = String(input.content ?? "").length;
       return `${input.path ?? ""} · ${len} bytes`;

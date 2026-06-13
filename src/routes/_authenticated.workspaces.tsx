@@ -13,7 +13,14 @@ import {
 import { listProviders } from "@/lib/providers.functions";
 import { listServers } from "@/lib/servers.functions";
 import { Briefcase } from "lucide-react";
-import { Field, TextInput, Select, StatusBadge, Card, FormShell } from "@/components/control-plane/Form";
+import {
+  Field,
+  TextInput,
+  Select,
+  StatusBadge,
+  Card,
+  FormShell,
+} from "@/components/control-plane/Form";
 import { Header, Pill, Empty, Loading, RowActions } from "./_authenticated.databases";
 
 export const Route = createFileRoute("/_authenticated/workspaces")({
@@ -87,7 +94,11 @@ function WorkspacesPage() {
 
   return (
     <AppShell>
-      <Header title="Workspaces" hint="Roots, policies, and active provider / storage / database bindings." onAdd={() => setEditing({})} />
+      <Header
+        title="Workspaces"
+        hint="Roots, policies, and active provider / storage / database bindings."
+        onAdd={() => setEditing({})}
+      />
 
       {editing && (
         <WsForm
@@ -105,7 +116,9 @@ function WorkspacesPage() {
 
       <div className="mt-3 space-y-2.5">
         {isLoading && <Loading />}
-        {!isLoading && items.length === 0 && !editing && <Empty icon={Briefcase} text="No workspaces yet." />}
+        {!isLoading && items.length === 0 && !editing && (
+          <Empty icon={Briefcase} text="No workspaces yet." />
+        )}
         {items.map((w) => (
           <Card key={w.id}>
             <div className="flex items-start gap-2">
@@ -119,15 +132,19 @@ function WorkspacesPage() {
                   <Pill>{w.command_permission_level}</Pill>
                   <StatusBadge status={w.server_id ? "ok" : undefined} />
                 </div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">{w.path}</div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">
+                  {w.path}
+                </div>
                 {w.repo_url && (
                   <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">
-                    {w.repo_url}{w.default_branch ? ` · ${w.default_branch}` : ""}
+                    {w.repo_url}
+                    {w.default_branch ? ` · ${w.default_branch}` : ""}
                   </div>
                 )}
                 {w.allowed_paths && w.allowed_paths.length > 0 && (
                   <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
-                    allowed: {w.allowed_paths.slice(0, 3).join(", ")}{w.allowed_paths.length > 3 ? "…" : ""}
+                    allowed: {w.allowed_paths.slice(0, 3).join(", ")}
+                    {w.allowed_paths.length > 3 ? "…" : ""}
                   </div>
                 )}
               </div>
@@ -180,7 +197,9 @@ function WsForm({
   const [allowedPaths, setAllowedPaths] = useState((initial.allowed_paths ?? []).join("\n"));
   const [defaultBranch, setDefaultBranch] = useState(initial.default_branch ?? "main");
   const [repoUrl, setRepoUrl] = useState(initial.repo_url ?? "");
-  const [filePolicy, setFilePolicy] = useState<FilePolicy>((initial.file_access_policy as FilePolicy) ?? "restricted");
+  const [filePolicy, setFilePolicy] = useState<FilePolicy>(
+    (initial.file_access_policy as FilePolicy) ?? "restricted",
+  );
   const [cmdPolicy, setCmdPolicy] = useState<CmdPolicy>(
     (initial.command_permission_level as CmdPolicy) ?? "restricted-with-approval",
   );
@@ -199,7 +218,10 @@ function WsForm({
           name,
           path,
           server_id: serverId || null,
-          allowed_paths: allowedPaths.split("\n").map((p) => p.trim()).filter(Boolean),
+          allowed_paths: allowedPaths
+            .split("\n")
+            .map((p) => p.trim())
+            .filter(Boolean),
           default_branch: defaultBranch || null,
           repo_url: repoUrl || null,
           file_access_policy: filePolicy,
@@ -210,14 +232,23 @@ function WsForm({
         })
       }
     >
-      <Field label="Name"><TextInput value={name} onChange={setName} mono={false} placeholder="app-prod" /></Field>
-      <Field label="Root path"><TextInput value={path} onChange={setPath} placeholder="/var/workspaces/app" /></Field>
-      <Field label="Repository URL"><TextInput value={repoUrl} onChange={setRepoUrl} placeholder="https://github.com/org/repo.git" /></Field>
-      <Field label="Default branch"><TextInput value={defaultBranch} onChange={setDefaultBranch} placeholder="main" /></Field>
-      <Field
-        label="Allowed paths"
-        hint="One per line. Restricts file ops to these subpaths."
-      >
+      <Field label="Name">
+        <TextInput value={name} onChange={setName} mono={false} placeholder="app-prod" />
+      </Field>
+      <Field label="Root path">
+        <TextInput value={path} onChange={setPath} placeholder="/var/workspaces/app" />
+      </Field>
+      <Field label="Repository URL">
+        <TextInput
+          value={repoUrl}
+          onChange={setRepoUrl}
+          placeholder="https://github.com/org/repo.git"
+        />
+      </Field>
+      <Field label="Default branch">
+        <TextInput value={defaultBranch} onChange={setDefaultBranch} placeholder="main" />
+      </Field>
+      <Field label="Allowed paths" hint="One per line. Restricts file ops to these subpaths.">
         <textarea
           value={allowedPaths}
           onChange={(e) => setAllowedPaths(e.target.value)}
@@ -255,28 +286,40 @@ function WsForm({
         <Select
           value={serverId}
           onChange={setServerId}
-          options={[{ value: "", label: "— none —" }, ...servers.map((s) => ({ value: s.id, label: s.name }))]}
+          options={[
+            { value: "", label: "— none —" },
+            ...servers.map((s) => ({ value: s.id, label: s.name })),
+          ]}
         />
       </Field>
       <Field label="Active AI provider">
         <Select
           value={providerId}
           onChange={setProviderId}
-          options={[{ value: "", label: "— default —" }, ...providers.map((p) => ({ value: p.id, label: p.name }))]}
+          options={[
+            { value: "", label: "— default —" },
+            ...providers.map((p) => ({ value: p.id, label: p.name })),
+          ]}
         />
       </Field>
       <Field label="Active storage">
         <Select
           value={storageId}
           onChange={setStorageId}
-          options={[{ value: "", label: "— default —" }, ...storages.map((s) => ({ value: s.id, label: s.name }))]}
+          options={[
+            { value: "", label: "— default —" },
+            ...storages.map((s) => ({ value: s.id, label: s.name })),
+          ]}
         />
       </Field>
       <Field label="Active database">
         <Select
           value={dbId}
           onChange={setDbId}
-          options={[{ value: "", label: "— none —" }, ...dbs.map((d) => ({ value: d.id, label: d.name }))]}
+          options={[
+            { value: "", label: "— none —" },
+            ...dbs.map((d) => ({ value: d.id, label: d.name })),
+          ]}
         />
       </Field>
     </FormShell>

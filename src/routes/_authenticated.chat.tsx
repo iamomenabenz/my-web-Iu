@@ -96,10 +96,7 @@ function ChatPage() {
     const content = (text ?? input).trim();
     if (!content || isStreaming) return;
     setInput("");
-    await sendMessage(
-      { text: content },
-      { body: { model: backendModel } },
-    );
+    await sendMessage({ text: content }, { body: { model: backendModel } });
     requestAnimationFrame(() => taRef.current?.focus());
   }
 
@@ -205,13 +202,22 @@ function ChatPage() {
             />
             <div className="flex items-center gap-0.5 pt-1 min-w-0">
               <div className="flex shrink-0 items-center gap-0.5">
-                <button className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition" aria-label="Attach">
+                <button
+                  className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition"
+                  aria-label="Attach"
+                >
                   <Plus className="h-4 w-4" />
                 </button>
-                <button className="hidden xs:grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition" aria-label="Tools">
+                <button
+                  className="hidden xs:grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition"
+                  aria-label="Tools"
+                >
                   <Wrench className="h-4 w-4" />
                 </button>
-                <button className="hidden xs:grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition" aria-label="Browse">
+                <button
+                  className="hidden xs:grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition"
+                  aria-label="Browse"
+                >
                   <Globe className="h-4 w-4" />
                 </button>
               </div>
@@ -235,7 +241,10 @@ function ChatPage() {
               </DropdownMenu>
 
               <div className="ml-auto flex shrink-0 items-center gap-0.5 pl-1">
-                <button className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition" aria-label="Voice">
+                <button
+                  className="grid h-8 w-8 place-items-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 active:scale-95 transition"
+                  aria-label="Voice"
+                >
                   <Mic className="h-4 w-4" />
                 </button>
                 {isStreaming ? (
@@ -267,9 +276,7 @@ function ChatPage() {
 
 function MessageBubble({ message }: { message: UIMessage }) {
   if (message.role === "user") {
-    const text = message.parts
-      .map((p) => (p.type === "text" ? p.text : ""))
-      .join("");
+    const text = message.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-3.5 py-2.5 text-[14px] leading-relaxed text-primary-foreground whitespace-pre-wrap font-medium">
@@ -299,15 +306,15 @@ type AnyPart = UIMessage["parts"][number];
 
 function PartRenderer({ part }: { part: AnyPart }) {
   if (part.type === "text") {
-    return (
-      <div className="whitespace-pre-wrap break-words">{part.text}</div>
-    );
+    return <div className="whitespace-pre-wrap break-words">{part.text}</div>;
   }
   if (part.type === "reasoning") {
     return (
       <details className="rounded-lg border border-border/60 bg-card/40 px-3 py-2 text-[12.5px] text-muted-foreground">
         <summary className="cursor-pointer select-none text-foreground/80">Reasoning</summary>
-        <div className="mt-1.5 whitespace-pre-wrap">{("text" in part ? part.text : "") as string}</div>
+        <div className="mt-1.5 whitespace-pre-wrap">
+          {("text" in part ? part.text : "") as string}
+        </div>
       </details>
     );
   }
@@ -335,20 +342,30 @@ const TOOL_META: Record<string, { icon: typeof Terminal; label: string; tint: st
 };
 
 function ToolCallCard({ part }: { part: ToolPart }) {
-  const meta = TOOL_META[part.type] ?? { icon: Wrench, label: part.type.replace(/^tool-/, ""), tint: "text-muted-foreground" };
+  const meta = TOOL_META[part.type] ?? {
+    icon: Wrench,
+    label: part.type.replace(/^tool-/, ""),
+    tint: "text-muted-foreground",
+  };
   const Icon = meta.icon;
   const state = part.state ?? "input-streaming";
 
   const StateIcon =
-    state === "output-available" ? CheckCircle2 :
-    state === "output-error" ? AlertCircle :
-    state === "input-available" ? Clock :
-    Loader2;
+    state === "output-available"
+      ? CheckCircle2
+      : state === "output-error"
+        ? AlertCircle
+        : state === "input-available"
+          ? Clock
+          : Loader2;
   const stateClass =
-    state === "output-available" ? "text-emerald-400" :
-    state === "output-error" ? "text-destructive" :
-    state === "input-available" ? "text-amber-400" :
-    "text-primary animate-spin";
+    state === "output-available"
+      ? "text-emerald-400"
+      : state === "output-error"
+        ? "text-destructive"
+        : state === "input-available"
+          ? "text-amber-400"
+          : "text-primary animate-spin";
 
   // Special-case the plan tool: render as a checklist.
   if (part.type === "tool-plan" && state === "output-available") {
@@ -371,13 +388,21 @@ function ToolCallCard({ part }: { part: ToolPart }) {
   }
 
   // run_command preview
-  const cmd = part.type === "tool-run_command" ? (part.input as { command?: string } | undefined)?.command : undefined;
+  const cmd =
+    part.type === "tool-run_command"
+      ? (part.input as { command?: string } | undefined)?.command
+      : undefined;
 
-  const output = part.output as { pending?: boolean; approvalId?: string; note?: string; mode?: string; risk?: string } | undefined;
+  const output = part.output as
+    | { pending?: boolean; approvalId?: string; note?: string; mode?: string; risk?: string }
+    | undefined;
   const isPending = output?.pending === true;
 
   return (
-    <details className="group rounded-xl border border-border/70 bg-card/60 overflow-hidden" open={state !== "output-available" || isPending}>
+    <details
+      className="group rounded-xl border border-border/70 bg-card/60 overflow-hidden"
+      open={state !== "output-available" || isPending}
+    >
       <summary className="flex cursor-pointer select-none items-center gap-2 px-3 py-2 text-[12.5px]">
         <Icon className={`h-3.5 w-3.5 ${meta.tint}`} />
         <span className="font-medium">{meta.label}</span>
@@ -397,24 +422,31 @@ function ToolCallCard({ part }: { part: ToolPart }) {
             href="/approvals"
             className="block rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[12px] text-amber-300 font-sans"
           >
-            {output?.note ?? "Awaiting approval."} <span className="underline">Open approvals →</span>
+            {output?.note ?? "Awaiting approval."}{" "}
+            <span className="underline">Open approvals →</span>
           </a>
         )}
         {part.input !== undefined && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Input</div>
-            <pre className="whitespace-pre-wrap break-words text-foreground/85">{safeStringify(part.input)}</pre>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+              Input
+            </div>
+            <pre className="whitespace-pre-wrap break-words text-foreground/85">
+              {safeStringify(part.input)}
+            </pre>
           </div>
         )}
         {part.output !== undefined && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Result</div>
-            <pre className="whitespace-pre-wrap break-words text-foreground/85">{safeStringify(part.output)}</pre>
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+              Result
+            </div>
+            <pre className="whitespace-pre-wrap break-words text-foreground/85">
+              {safeStringify(part.output)}
+            </pre>
           </div>
         )}
-        {part.errorText && (
-          <div className="text-destructive">{part.errorText}</div>
-        )}
+        {part.errorText && <div className="text-destructive">{part.errorText}</div>}
       </div>
     </details>
   );

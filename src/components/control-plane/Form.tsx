@@ -92,13 +92,14 @@ export function StatusBadge({ status }: { status?: string | null }) {
       </span>
     );
   }
-  const ok = status === "ok" || status === "online" || status === "format_ok" || status === "config_ok";
+  const ok =
+    status === "ok" || status === "online" || status === "format_ok" || status === "config_ok";
   const warn = status.startsWith("missing") || status === "untested";
   const cls = ok
     ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
     : warn
-    ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
-    : "text-red-400 bg-red-500/10 border-red-500/30";
+      ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+      : "text-red-400 bg-red-500/10 border-red-500/30";
   const Icon = ok ? CheckCircle2 : warn ? AlertTriangle : XCircle;
   return (
     <span

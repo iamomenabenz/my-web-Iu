@@ -3,13 +3,7 @@
 // M3: tool execution flows through src/lib/tools/executor.server.ts which
 // classifies risk and queues approvals for restricted/dangerous actions.
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  convertToModelMessages,
-  streamText,
-  stepCountIs,
-  tool,
-  type UIMessage,
-} from "ai";
+import { convertToModelMessages, streamText, stepCountIs, tool, type UIMessage } from "ai";
 import { z } from "zod";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
@@ -112,7 +106,8 @@ export const Route = createFileRoute("/api/chat")({
             .select("server_id, servers:server_id(adapter_mode, enabled)")
             .eq("id", workspaceId)
             .maybeSingle();
-          const srv = (ws as { servers?: { adapter_mode?: string; enabled?: boolean } } | null)?.servers;
+          const srv = (ws as { servers?: { adapter_mode?: string; enabled?: boolean } } | null)
+            ?.servers;
           if (srv?.enabled && srv?.adapter_mode) {
             adapterMode = srv.adapter_mode as AdapterMode;
           }
