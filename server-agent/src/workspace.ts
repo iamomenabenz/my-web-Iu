@@ -14,6 +14,8 @@ export async function listFiles(root: string, dir = ".", limit = 200) {
   return {
     root,
     path: path.relative(root, full) || ".",
-    entries: entries.slice(0, limit).map((entry) => ({ name: entry.name, type: entry.isDirectory() ? "dir" : "file" })),
+    entries: entries
+      .slice(0, limit)
+      .map((entry) => ({ name: entry.name, type: entry.isDirectory() ? "dir" : "file" })),
   };
 }

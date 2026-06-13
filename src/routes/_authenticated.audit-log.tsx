@@ -29,11 +29,16 @@ function AuditLogPage() {
 
   return (
     <AppShell>
-      <Header title="Audit log" hint="Provider, database, storage, workspace, approval, and tool events." />
+      <Header
+        title="Audit log"
+        hint="Provider, database, storage, workspace, approval, and tool events."
+      />
 
       <div className="mt-3 space-y-2">
         {isLoading && <Loading />}
-        {!isLoading && entries.length === 0 && <Empty icon={ScrollText} text="No audit entries yet." />}
+        {!isLoading && entries.length === 0 && (
+          <Empty icon={ScrollText} text="No audit entries yet." />
+        )}
         {entries.map((e) => {
           const payload = e.payload ?? {};
           const status = (payload as { status?: string }).status;
@@ -55,10 +60,14 @@ function AuditLogPage() {
                     )}
                   </div>
                   {e.target && (
-                    <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">→ {e.target}</div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">
+                      → {e.target}
+                    </div>
                   )}
                   {summary && (
-                    <div className="mt-0.5 text-[11px] text-muted-foreground truncate">{summary}</div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground truncate">
+                      {summary}
+                    </div>
                   )}
                   <div className="mt-0.5 text-[10.5px] text-muted-foreground">
                     {new Date(e.created_at).toLocaleString()}

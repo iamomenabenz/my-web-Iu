@@ -22,12 +22,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.12.0'
+          node-version: "22.12.0"
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: '1.2.14'
+          bun-version: "1.2.14"
 
       - name: Install root dependencies
         run: bun install --frozen-lockfile
@@ -54,7 +54,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22.12.0'
+          node-version: "22.12.0"
 
       - name: Install server-agent dependencies
         run: npm install --ignore-scripts --no-audit --no-fund

@@ -10,7 +10,15 @@ import {
   testIntegration,
 } from "@/lib/control-plane.functions";
 import { Plug } from "lucide-react";
-import { Field, TextInput, Select, Toggle, StatusBadge, Card, FormShell } from "@/components/control-plane/Form";
+import {
+  Field,
+  TextInput,
+  Select,
+  Toggle,
+  StatusBadge,
+  Card,
+  FormShell,
+} from "@/components/control-plane/Form";
 import { Header, Pill, Empty, Loading, RowActions } from "./_authenticated.databases";
 
 export const Route = createFileRoute("/_authenticated/integrations")({
@@ -92,7 +100,9 @@ function IntegrationsPage() {
 
       <div className="mt-3 space-y-2.5">
         {isLoading && <Loading />}
-        {!isLoading && items.length === 0 && !editing && <Empty icon={Plug} text="No integrations configured." />}
+        {!isLoading && items.length === 0 && !editing && (
+          <Empty icon={Plug} text="No integrations configured." />
+        )}
         {items.map((i) => (
           <Card key={i.id}>
             <div className="flex items-start gap-2">
@@ -107,10 +117,18 @@ function IntegrationsPage() {
                   {i.allow_agent_use && <Pill tone="ok">agent</Pill>}
                   {!i.enabled && <Pill tone="warn">disabled</Pill>}
                 </div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">{i.base_url}</div>
-                {i.description && <div className="mt-0.5 text-[11.5px] text-muted-foreground truncate">{i.description}</div>}
+                <div className="mt-0.5 text-[11px] text-muted-foreground font-mono truncate">
+                  {i.base_url}
+                </div>
+                {i.description && (
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground truncate">
+                    {i.description}
+                  </div>
+                )}
                 {i.last_validation_error && (
-                  <div className="mt-0.5 text-[11px] text-amber-400/90 truncate">{i.last_validation_error}</div>
+                  <div className="mt-0.5 text-[11px] text-amber-400/90 truncate">
+                    {i.last_validation_error}
+                  </div>
                 )}
               </div>
             </div>
@@ -178,8 +196,12 @@ function IntForm({
         })
       }
     >
-      <Field label="Name"><TextInput value={name} onChange={setName} mono={false} placeholder="github-api" /></Field>
-      <Field label="Base URL"><TextInput value={baseUrl} onChange={setBaseUrl} placeholder="https://api.github.com" /></Field>
+      <Field label="Name">
+        <TextInput value={name} onChange={setName} mono={false} placeholder="github-api" />
+      </Field>
+      <Field label="Base URL">
+        <TextInput value={baseUrl} onChange={setBaseUrl} placeholder="https://api.github.com" />
+      </Field>
       <Field label="Auth type">
         <Select
           value={authType}
@@ -194,14 +216,23 @@ function IntForm({
         />
       </Field>
       {(authType === "api-key" || authType === "custom-header") && (
-        <Field label="Header name"><TextInput value={headerName} onChange={setHeaderName} placeholder="X-API-Key" /></Field>
+        <Field label="Header name">
+          <TextInput value={headerName} onChange={setHeaderName} placeholder="X-API-Key" />
+        </Field>
       )}
       {authType !== "none" && (
         <Field label="Token / key" hint={initial.id ? "Leave blank to keep." : "Write-only."}>
           <TextInput value={token} onChange={setToken} type="password" />
         </Field>
       )}
-      <Field label="Description"><TextInput value={description} onChange={setDescription} mono={false} placeholder="What the agent can use this API for" /></Field>
+      <Field label="Description">
+        <TextInput
+          value={description}
+          onChange={setDescription}
+          mono={false}
+          placeholder="What the agent can use this API for"
+        />
+      </Field>
       <Toggle checked={enabled} onChange={setEnabled} label="Enabled" />
       <Toggle checked={allowAgent} onChange={setAllowAgent} label="Allow agent to call this API" />
     </FormShell>

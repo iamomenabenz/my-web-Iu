@@ -58,7 +58,13 @@ export function classifyRisk({ tool, input }: RiskInput): {
   if (tool === "web_search")
     return { risk: "safe", reason: "External web lookup, no workspace mutation." };
 
-  if (tool === "list_files" || tool === "search_files" || tool === "get_workspace_info" || tool === "get_logs") return { risk: "safe", reason: "Read-only remote-agent operation." };
+  if (
+    tool === "list_files" ||
+    tool === "search_files" ||
+    tool === "get_workspace_info" ||
+    tool === "get_logs"
+  )
+    return { risk: "safe", reason: "Read-only remote-agent operation." };
 
   if (tool === "read_file") {
     const path = String(input.path ?? "");

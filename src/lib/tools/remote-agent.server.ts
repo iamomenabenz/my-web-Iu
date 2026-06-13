@@ -71,11 +71,9 @@ async function daemonFetch<T>(
 }
 
 export function daemonHealth(cfg: DaemonConfig) {
-  return daemonFetch<{ ok: boolean; version?: string; uptimeMs?: number }>(
-    cfg,
-    "/health",
-    { method: "GET" },
-  );
+  return daemonFetch<{ ok: boolean; version?: string; uptimeMs?: number }>(cfg, "/health", {
+    method: "GET",
+  });
 }
 
 export function daemonExec(
@@ -99,17 +97,13 @@ export function daemonExec(
 }
 
 export function daemonReadFile(cfg: DaemonConfig, input: { path: string }) {
-  return daemonFetch<{ path: string; content: string; truncated?: boolean }>(
-    cfg,
-    "/files/read",
-    { method: "POST", body: JSON.stringify(input) },
-  );
+  return daemonFetch<{ path: string; content: string; truncated?: boolean }>(cfg, "/files/read", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
-export function daemonWriteFile(
-  cfg: DaemonConfig,
-  input: { path: string; content: string },
-) {
+export function daemonWriteFile(cfg: DaemonConfig, input: { path: string; content: string }) {
   return daemonFetch<{ path: string; bytes: number }>(cfg, "/files/write", {
     method: "POST",
     body: JSON.stringify(input),
@@ -146,7 +140,9 @@ export function daemonSearchFiles(
 }
 
 export function daemonWorkspaceInfo(cfg: DaemonConfig) {
-  return daemonFetch<{ root: string; writable: boolean }>(cfg, "/workspace/info", { method: "GET" });
+  return daemonFetch<{ root: string; writable: boolean }>(cfg, "/workspace/info", {
+    method: "GET",
+  });
 }
 
 export function daemonStopCommand(cfg: DaemonConfig, input: { commandId: string }) {
@@ -184,15 +180,13 @@ export async function resolveDaemonConfig(
     .select("daemon_url, daemon_token, workspace_root, enabled, adapter_mode")
     .eq("id", serverId)
     .maybeSingle();
-  const s = srv as
-    | {
-        daemon_url?: string | null;
-        daemon_token?: string | null;
-        workspace_root?: string | null;
-        enabled?: boolean | null;
-        adapter_mode?: string | null;
-      }
-    | null;
+  const s = srv as {
+    daemon_url?: string | null;
+    daemon_token?: string | null;
+    workspace_root?: string | null;
+    enabled?: boolean | null;
+    adapter_mode?: string | null;
+  } | null;
   if (!s || !s.enabled || s.adapter_mode !== "remote-agent" || !s.daemon_url || !s.daemon_token) {
     return null;
   }

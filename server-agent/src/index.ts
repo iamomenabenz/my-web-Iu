@@ -52,33 +52,60 @@ async function runCommand(input: { command?: string; cwd?: string; timeoutMs?: n
   };
   child.stdout?.on("data", (d: Buffer) => push("stdout", d));
   child.stderr?.on("data", (d: Buffer) => push("stderr", d));
-  const timeout = setTimeout(() => child.kill("SIGTERM"), Math.min(input.timeoutMs ?? defaultTimeoutMs, defaultTimeoutMs));
+  const timeout = setTimeout(
+    () => child.kill("SIGTERM"),
+    Math.min(input.timeoutMs ?? defaultTimeoutMs, defaultTimeoutMs),
+  );
   const exitCode = await new Promise<number | null>((resolve) => child.on("close", resolve));
   clearTimeout(timeout);
   commands.delete(commandId);
-  return { commandId, exitCode: exitCode ?? -1, stdout: logs.join("").slice(0, 100_000), stderr: "", durationMs: Date.now() - started };
+  return {
+    commandId,
+    exitCode: exitCode ?? -1,
+    stdout: logs.join("").slice(0, 100_000),
+    stderr: "",
+    durationMs: Date.now() - started,
+  };
 }
 
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     requireDaemonToken(req, token);
-    if (req.method === "GET" && url.pathname === "/health") return send(res, 200, { ok: true, version: "0.1.0", uptimeMs: Date.now() - startedAt });
-    if (req.method === "GET" && url.pathname === "/workspace/info") return send(res, 200, await workspaceInfo(workspaceRoot));
-    if (req.method === "GET" && url.pathname === "/files/list") return send(res, 200, await listFiles(workspaceRoot, url.searchParams.get("path") ?? ".", Number(url.searchParams.get("limit") ?? 200)));
+    if (req.method === "GET" && url.pathname === "/health")
+      return send(res, 200, { ok: true, version: "0.1.0", uptimeMs: Date.now() - startedAt });
+    if (req.method === "GET" && url.pathname === "/workspace/info")
+      return send(res, 200, await workspaceInfo(workspaceRoot));
+    if (req.method === "GET" && url.pathname === "/files/list")
+      return send(
+        res,
+        200,
+        await listFiles(
+          workspaceRoot,
+          url.searchParams.get("path") ?? ".",
+          Number(url.searchParams.get("limit") ?? 200),
+        ),
+      );
     if (req.method === "POST" && url.pathname === "/files/read") {
       const input = await body<{ path?: string }>(req);
       const full = assertSafeRelativePath(input.path, workspaceRoot);
       const stat = await fs.stat(full);
-      if (stat.size > maxFileBytes) throw Object.assign(new Error("File exceeds max read size."), { statusCode: 413 });
-      return send(res, 200, { path: path.relative(workspaceRoot, full), content: await fs.readFile(full, "utf8") });
+      if (stat.size > maxFileBytes)
+        throw Object.assign(new Error("File exceeds max read size."), { statusCode: 413 });
+      return send(res, 200, {
+        path: path.relative(workspaceRoot, full),
+        content: await fs.readFile(full, "utf8"),
+      });
     }
     if (req.method === "POST" && url.pathname === "/files/write") {
       const input = await body<{ path?: string; content?: string }>(req);
       const full = assertSafeRelativePath(input.path, workspaceRoot);
       await fs.mkdir(path.dirname(full), { recursive: true });
       await fs.writeFile(full, String(input.content ?? ""), "utf8");
-      return send(res, 200, { path: path.relative(workspaceRoot, full), bytes: Buffer.byteLength(String(input.content ?? "")) });
+      return send(res, 200, {
+        path: path.relative(workspaceRoot, full),
+        bytes: Buffer.byteLength(String(input.content ?? "")),
+      });
     }
     if (req.method === "POST" && url.pathname === "/files/delete") {
       const input = await body<{ path?: string }>(req);
@@ -94,31 +121,59 @@ const server = http.createServer(async (req, res) => {
       async function walk(current: string): Promise<void> {
         if (matches.length >= Math.min(input.limit ?? maxSearchResults, maxSearchResults)) return;
         for (const entry of await fs.readdir(current, { withFileTypes: true })) {
-          const full = path.join(current, entry.name); assertSafeRelativePath(path.relative(workspaceRoot, full), workspaceRoot);
+          const full = path.join(current, entry.name);
+          assertSafeRelativePath(path.relative(workspaceRoot, full), workspaceRoot);
           if (entry.isDirectory()) await walk(full);
           else if (entry.isFile()) {
             let lineNo = 0;
-            for await (const line of readline.createInterface({ input: createReadStream(full), crlfDelay: Infinity })) {
-              lineNo += 1; if (line.includes(query)) matches.push({ path: path.relative(workspaceRoot, full), line: lineNo, preview: line.slice(0, 300) });
-              if (matches.length >= Math.min(input.limit ?? maxSearchResults, maxSearchResults)) return;
+            for await (const line of readline.createInterface({
+              input: createReadStream(full),
+              crlfDelay: Infinity,
+            })) {
+              lineNo += 1;
+              if (line.includes(query))
+                matches.push({
+                  path: path.relative(workspaceRoot, full),
+                  line: lineNo,
+                  preview: line.slice(0, 300),
+                });
+              if (matches.length >= Math.min(input.limit ?? maxSearchResults, maxSearchResults))
+                return;
             }
           }
         }
       }
-      await walk(dir); return send(res, 200, { matches });
+      await walk(dir);
+      return send(res, 200, { matches });
     }
-    if (req.method === "POST" && url.pathname === "/commands/run") return send(res, 200, await runCommand(await body<{ command?: string; cwd?: string; timeoutMs?: number }>(req)));
+    if (req.method === "POST" && url.pathname === "/commands/run")
+      return send(
+        res,
+        200,
+        await runCommand(await body<{ command?: string; cwd?: string; timeoutMs?: number }>(req)),
+      );
     if (req.method === "POST" && url.pathname === "/commands/stop") {
-      const input = await body<{ commandId?: string }>(req); const item = commands.get(String(input.commandId ?? ""));
+      const input = await body<{ commandId?: string }>(req);
+      const item = commands.get(String(input.commandId ?? ""));
       if (!item) return send(res, 404, { ok: false, error: "Command not running." });
-      item.child.kill("SIGTERM"); return send(res, 200, { commandId: input.commandId, stopped: true });
+      item.child.kill("SIGTERM");
+      return send(res, 200, { commandId: input.commandId, stopped: true });
     }
-    if (req.method === "GET" && url.pathname === "/commands/logs") return send(res, 200, { logs: recentLogs.slice(-Number(url.searchParams.get("limit") ?? 100)) });
+    if (req.method === "GET" && url.pathname === "/commands/logs")
+      return send(res, 200, {
+        logs: recentLogs.slice(-Number(url.searchParams.get("limit") ?? 100)),
+      });
     return send(res, 404, { ok: false, error: "Not found" });
   } catch (error) {
     const err = error as Error & { statusCode?: number };
-    send(res, err.statusCode ?? 500, { ok: false, error: err.message, code: err.statusCode ?? 500 });
+    send(res, err.statusCode ?? 500, {
+      ok: false,
+      error: err.message,
+      code: err.statusCode ?? 500,
+    });
   }
 });
 
-server.listen(port, () => console.log(`omena-server-agent listening on :${port} root=${workspaceRoot}`));
+server.listen(port, () =>
+  console.log(`omena-server-agent listening on :${port} root=${workspaceRoot}`),
+);

@@ -11,7 +11,15 @@ import {
   setDefaultStorage,
 } from "@/lib/control-plane.functions";
 import { HardDrive, Star } from "lucide-react";
-import { Field, TextInput, Select, Toggle, StatusBadge, Card, FormShell } from "@/components/control-plane/Form";
+import {
+  Field,
+  TextInput,
+  Select,
+  Toggle,
+  StatusBadge,
+  Card,
+  FormShell,
+} from "@/components/control-plane/Form";
 import { Header, Pill, Empty, Loading, RowActions } from "./_authenticated.databases";
 
 export const Route = createFileRoute("/_authenticated/storage")({
@@ -81,7 +89,11 @@ function StoragePage() {
 
   return (
     <AppShell>
-      <Header title="Storage" hint="S3 / R2 / Supabase / Vercel Blob. Secret keys stay server-side." onAdd={() => setEditing({})} />
+      <Header
+        title="Storage"
+        hint="S3 / R2 / Supabase / Vercel Blob. Secret keys stay server-side."
+        onAdd={() => setEditing({})}
+      />
 
       {editing && (
         <StorageForm
@@ -95,7 +107,9 @@ function StoragePage() {
 
       <div className="mt-3 space-y-2.5">
         {isLoading && <Loading />}
-        {!isLoading && items.length === 0 && !editing && <Empty icon={HardDrive} text="No storage backends." />}
+        {!isLoading && items.length === 0 && !editing && (
+          <Empty icon={HardDrive} text="No storage backends." />
+        )}
         {items.map((s) => (
           <Card key={s.id}>
             <div className="flex items-start gap-2">
@@ -114,7 +128,9 @@ function StoragePage() {
                   {s.bucket || "—"} {s.region ? `· ${s.region}` : ""}
                 </div>
                 {s.last_validation_error && (
-                  <div className="mt-0.5 text-[11px] text-amber-400/90 truncate">{s.last_validation_error}</div>
+                  <div className="mt-0.5 text-[11px] text-amber-400/90 truncate">
+                    {s.last_validation_error}
+                  </div>
                 )}
               </div>
             </div>
@@ -168,7 +184,9 @@ function StorageForm({
   error: string | null;
 }) {
   const [name, setName] = useState(initial.name ?? "");
-  const [provider, setProvider] = useState<StorageProviderKind>((initial.provider_type as StorageProviderKind) ?? "s3");
+  const [provider, setProvider] = useState<StorageProviderKind>(
+    (initial.provider_type as StorageProviderKind) ?? "s3",
+  );
   const [bucket, setBucket] = useState(initial.bucket ?? "");
   const [region, setRegion] = useState(initial.region ?? "");
   const [endpoint, setEndpoint] = useState(initial.endpoint ?? "");
@@ -197,7 +215,9 @@ function StorageForm({
         })
       }
     >
-      <Field label="Name"><TextInput value={name} onChange={setName} mono={false} placeholder="primary-storage" /></Field>
+      <Field label="Name">
+        <TextInput value={name} onChange={setName} mono={false} placeholder="primary-storage" />
+      </Field>
       <Field label="Provider">
         <Select
           value={provider}
@@ -212,11 +232,25 @@ function StorageForm({
           ]}
         />
       </Field>
-      <Field label="Bucket"><TextInput value={bucket} onChange={setBucket} placeholder="my-bucket" /></Field>
-      <Field label="Region"><TextInput value={region} onChange={setRegion} placeholder="auto / us-east-1" /></Field>
-      <Field label="Endpoint" hint="Required for R2 / custom S3."><TextInput value={endpoint} onChange={setEndpoint} placeholder="https://<account>.r2.cloudflarestorage.com" /></Field>
-      <Field label="Access key ID" hint={initial.id ? "Leave blank to keep." : "Write-only."}><TextInput value={accessKey} onChange={setAccessKey} type="password" /></Field>
-      <Field label="Secret access key" hint={initial.id ? "Leave blank to keep." : "Write-only."}><TextInput value={secretKey} onChange={setSecretKey} type="password" /></Field>
+      <Field label="Bucket">
+        <TextInput value={bucket} onChange={setBucket} placeholder="my-bucket" />
+      </Field>
+      <Field label="Region">
+        <TextInput value={region} onChange={setRegion} placeholder="auto / us-east-1" />
+      </Field>
+      <Field label="Endpoint" hint="Required for R2 / custom S3.">
+        <TextInput
+          value={endpoint}
+          onChange={setEndpoint}
+          placeholder="https://<account>.r2.cloudflarestorage.com"
+        />
+      </Field>
+      <Field label="Access key ID" hint={initial.id ? "Leave blank to keep." : "Write-only."}>
+        <TextInput value={accessKey} onChange={setAccessKey} type="password" />
+      </Field>
+      <Field label="Secret access key" hint={initial.id ? "Leave blank to keep." : "Write-only."}>
+        <TextInput value={secretKey} onChange={setSecretKey} type="password" />
+      </Field>
       <Toggle checked={isDefault} onChange={setIsDefault} label="Default storage" />
       <Toggle checked={enabled} onChange={setEnabled} label="Enabled" />
     </FormShell>

@@ -177,12 +177,13 @@ async function runSafe(
       risk: "safe",
       summary,
       data: { query: input.query, results: [] },
-      note:
-        "Web search provider not yet connected. Reply from existing knowledge and recommend the user verify time-sensitive facts.",
+      note: "Web search provider not yet connected. Reply from existing knowledge and recommend the user verify time-sensitive facts.",
     };
   }
 
-  if (["read_file", "list_files", "search_files", "get_workspace_info", "get_logs"].includes(tool)) {
+  if (
+    ["read_file", "list_files", "search_files", "get_workspace_info", "get_logs"].includes(tool)
+  ) {
     if (ctx.adapterMode === "remote-agent") {
       const cfg = await resolveDaemonConfig(ctx.workspaceId);
       if (cfg) return runReadOnlyRemote(tool, cfg, input, ctx, summary);

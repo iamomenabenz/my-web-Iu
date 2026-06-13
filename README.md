@@ -6,7 +6,6 @@
 - Bun 1.2.x is the primary Lovable/TanStack package manager for this repo (`bun.lock` + `bunfig.toml`).
 - `package-lock.json` is kept in sync for npm-based CI compatibility, but prefer `bun install` for local Lovable workflows.
 
-
 A production-ready, mobile-first operator console for AI engineering agents.
 Built with **TanStack Start**, **React 19**, **Vite 7**, **Tailwind v4**, and **Bun**.
 Fully self-hostable — clone, configure, deploy.
@@ -52,16 +51,16 @@ Fully self-hostable — clone, configure, deploy.
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
+| Layer     | Choice                                              |
+| --------- | --------------------------------------------------- |
 | Framework | TanStack Start v1 (file-based routing, SSR-capable) |
-| UI | React 19 + Tailwind v4 + shadcn/ui |
-| State | Zustand (persisted) + TanStack Query |
-| Runtime | Bun (Node 20+ also supported) |
-| Build | Vite 7 |
-| Testing | Vitest |
-| PWA | vite-plugin-pwa (Workbox) |
-| Container | Multi-stage Dockerfile (Bun slim) |
+| UI        | React 19 + Tailwind v4 + shadcn/ui                  |
+| State     | Zustand (persisted) + TanStack Query                |
+| Runtime   | Bun (Node 20+ also supported)                       |
+| Build     | Vite 7                                              |
+| Testing   | Vitest                                              |
+| PWA       | vite-plugin-pwa (Workbox)                           |
+| Container | Multi-stage Dockerfile (Bun slim)                   |
 
 ## Project structure
 
@@ -123,18 +122,18 @@ Mock mode runs the full UI with seeded data — no backend required.
 
 Copy `.env.example` → `.env`. Only `VITE_*` vars are bundled into the frontend.
 
-| Variable | Scope | Purpose |
-|---|---|---|
-| `VITE_API_BASE_URL` | client | Real REST API base. Empty → mock mode. |
-| `VITE_WS_URL` | client | WebSocket URL for terminal log stream. |
-| `OPENAI_API_KEY` | server | Provider key (never exposed to frontend) |
-| `ANTHROPIC_API_KEY` | server | |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | server | |
-| `DEEPSEEK_API_KEY` | server | |
-| `XAI_API_KEY` | server | |
-| `MISTRAL_API_KEY` | server | |
-| `CUSTOM_MODEL_BASE_URL` | server | Self-hosted / OpenAI-compatible endpoint |
-| `CUSTOM_MODEL_API_KEY` | server | |
+| Variable                       | Scope  | Purpose                                  |
+| ------------------------------ | ------ | ---------------------------------------- |
+| `VITE_API_BASE_URL`            | client | Real REST API base. Empty → mock mode.   |
+| `VITE_WS_URL`                  | client | WebSocket URL for terminal log stream.   |
+| `OPENAI_API_KEY`               | server | Provider key (never exposed to frontend) |
+| `ANTHROPIC_API_KEY`            | server |                                          |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | server |                                          |
+| `DEEPSEEK_API_KEY`             | server |                                          |
+| `XAI_API_KEY`                  | server |                                          |
+| `MISTRAL_API_KEY`              | server |                                          |
+| `CUSTOM_MODEL_BASE_URL`        | server | Self-hosted / OpenAI-compatible endpoint |
+| `CUSTOM_MODEL_API_KEY`         | server |                                          |
 
 > `VITE_*` values are **baked into the bundle at build time** — set them before `bun run build`, not at runtime.
 
@@ -160,8 +159,8 @@ HttpOnly session cookies.
 ```ts
 import { setAuthToken, getAuthToken } from "@/lib/api";
 
-setAuthToken("eyJhbGciOi...");   // after sign-in (stored in localStorage)
-setAuthToken(null);              // on sign-out
+setAuthToken("eyJhbGciOi..."); // after sign-in (stored in localStorage)
+setAuthToken(null); // on sign-out
 ```
 
 - Header sent: `Authorization: Bearer <token>` on every `fetch()` call.
@@ -208,13 +207,13 @@ docker compose up -d --build
 
 ## Deployment targets
 
-| Target | How |
-|---|---|
-| **VPS** | `docker compose up -d` behind nginx/Caddy with TLS |
-| **Cloudflare Workers** | `bunx wrangler deploy` — `vite.config.ts` already targets workerd |
-| **Fly.io / Render / Railway** | Point at the included `Dockerfile` |
-| **Vercel / Netlify** | Import repo, set `VITE_*` in project env, build cmd: `bun run build` |
-| **Kubernetes** | Use the Docker image; mount env from a ConfigMap/Secret |
+| Target                        | How                                                                  |
+| ----------------------------- | -------------------------------------------------------------------- |
+| **VPS**                       | `docker compose up -d` behind nginx/Caddy with TLS                   |
+| **Cloudflare Workers**        | `bunx wrangler deploy` — `vite.config.ts` already targets workerd    |
+| **Fly.io / Render / Railway** | Point at the included `Dockerfile`                                   |
+| **Vercel / Netlify**          | Import repo, set `VITE_*` in project env, build cmd: `bun run build` |
+| **Kubernetes**                | Use the Docker image; mount env from a ConfigMap/Secret              |
 
 Routes work on hard refresh (TanStack handles SPA fallback — no `_redirects` or `vercel.json` needed).
 
@@ -224,30 +223,30 @@ Implement these endpoints to replace the mocks. Types live in `src/lib/mock-data
 
 ### REST
 
-| Method | Path | Returns |
-|---|---|---|
-| GET | `/tasks` | `Task[]` |
-| GET | `/tasks/:id` | `Task` |
-| POST | `/tasks` | `Task` (body: `{title, prompt, agent}`) |
-| GET | `/tasks/:id/diffs` | `{staged, unstaged, taskId}` |
-| GET | `/tasks/:id/tests` | `TestsResult` |
-| GET | `/chat/messages` | `ChatMessage[]` |
-| POST | `/chat/messages` | `ChatMessage` (assistant reply) |
-| GET | `/terminal/logs` | `TerminalLine[]` |
-| POST | `/commands/:id/approve` | `{ok: true}` |
-| POST | `/commands/:id/reject` | `{ok: true}` |
-| GET | `/files` | `FileNode` (tree) |
-| GET | `/files/:path/content` | raw text |
-| PUT | `/files/:path/content` | `{ok: true}` |
-| GET | `/providers` | `Provider[]` |
-| PATCH | `/providers/:id` | updated provider |
-| GET | `/models` | `ModelOption[]` |
-| POST | `/models/:id/activate` | `{ok: true}` |
-| GET | `/agents` | `Agent[]` |
-| PATCH | `/agents/:id` | updated agent |
-| GET | `/workspaces` | `Workspace[]` |
-| POST | `/workspaces/:id/activate` | `{ok: true}` |
-| GET | `/notifications` | `Notification[]` |
+| Method | Path                       | Returns                                 |
+| ------ | -------------------------- | --------------------------------------- |
+| GET    | `/tasks`                   | `Task[]`                                |
+| GET    | `/tasks/:id`               | `Task`                                  |
+| POST   | `/tasks`                   | `Task` (body: `{title, prompt, agent}`) |
+| GET    | `/tasks/:id/diffs`         | `{staged, unstaged, taskId}`            |
+| GET    | `/tasks/:id/tests`         | `TestsResult`                           |
+| GET    | `/chat/messages`           | `ChatMessage[]`                         |
+| POST   | `/chat/messages`           | `ChatMessage` (assistant reply)         |
+| GET    | `/terminal/logs`           | `TerminalLine[]`                        |
+| POST   | `/commands/:id/approve`    | `{ok: true}`                            |
+| POST   | `/commands/:id/reject`     | `{ok: true}`                            |
+| GET    | `/files`                   | `FileNode` (tree)                       |
+| GET    | `/files/:path/content`     | raw text                                |
+| PUT    | `/files/:path/content`     | `{ok: true}`                            |
+| GET    | `/providers`               | `Provider[]`                            |
+| PATCH  | `/providers/:id`           | updated provider                        |
+| GET    | `/models`                  | `ModelOption[]`                         |
+| POST   | `/models/:id/activate`     | `{ok: true}`                            |
+| GET    | `/agents`                  | `Agent[]`                               |
+| PATCH  | `/agents/:id`              | updated agent                           |
+| GET    | `/workspaces`              | `Workspace[]`                           |
+| POST   | `/workspaces/:id/activate` | `{ok: true}`                            |
+| GET    | `/notifications`           | `Notification[]`                        |
 
 ### WebSocket
 
@@ -258,7 +257,7 @@ interface TerminalLine {
   id: string;
   stream: "stdout" | "stderr";
   text: string;
-  ts: string;        // ISO 8601
+  ts: string; // ISO 8601
 }
 ```
 
@@ -269,8 +268,7 @@ The client auto-reconnects with exponential backoff.
 `src/lib/store.ts` (Zustand, persisted to `localStorage`):
 
 ```ts
-const { workspaceId, agentId, modelId,
-        setWorkspace, setAgent, setModel } = useApp();
+const { workspaceId, agentId, modelId, setWorkspace, setAgent, setModel } = useApp();
 ```
 
 Read it anywhere — the top header, chat composer, and task creation all source context from this single store.
@@ -307,6 +305,7 @@ build on `main`. The install step is pinned for reproducibility:
 ```
 
 Notes:
+
 - `--registry=https://registry.npmjs.org` forces public npm resolution, avoiding
   stale private-registry tarball URLs that previously broke `bun install` in CI.
 - `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` is set workflow-wide to silence
@@ -315,20 +314,19 @@ Notes:
   Vite SSR output from `/app/dist` and runs `bun dist/server/index.mjs`
   (NOT `.output/` — that's a legacy path from older TanStack Start versions).
 
-
 ## Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| UI still shows seeded data after deploy | `VITE_API_BASE_URL` was empty at build time. Rebuild with the env set. |
-| Terminal shows mock log lines | Set `VITE_WS_URL` and rebuild. |
-| 404 on hard refresh | Confirm your host serves the TanStack server output, not just `dist/`. |
-| CORS errors | Allow your frontend origin from the backend. WS needs the same. |
-| Service worker serving stale UI | Visit `/?sw=off` once to unregister, then hard-reload. |
-| iOS notch overlap | Already handled via `env(safe-area-inset-*)` in `AppShell`, `TopHeader`, `BottomTabs`. |
-| Docker build fails with `.output directory not found` | You're on an old Dockerfile. Build output is now `dist/`. Pull latest `Dockerfile` + `.dockerignore`. |
-| CI fails on `bun install` (integrity / 401 from private registry) | Already fixed — workflow installs with `--no-cache --registry=https://registry.npmjs.org`. If forking, keep those flags. |
-| 401/403 from backend after login | Call `setAuthToken(token)` from `@/lib/api` after sign-in; verify the backend accepts `Authorization: Bearer ...` and your CORS allows the `Authorization` header + `credentials`. |
+| Symptom                                                           | Fix                                                                                                                                                                                |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI still shows seeded data after deploy                           | `VITE_API_BASE_URL` was empty at build time. Rebuild with the env set.                                                                                                             |
+| Terminal shows mock log lines                                     | Set `VITE_WS_URL` and rebuild.                                                                                                                                                     |
+| 404 on hard refresh                                               | Confirm your host serves the TanStack server output, not just `dist/`.                                                                                                             |
+| CORS errors                                                       | Allow your frontend origin from the backend. WS needs the same.                                                                                                                    |
+| Service worker serving stale UI                                   | Visit `/?sw=off` once to unregister, then hard-reload.                                                                                                                             |
+| iOS notch overlap                                                 | Already handled via `env(safe-area-inset-*)` in `AppShell`, `TopHeader`, `BottomTabs`.                                                                                             |
+| Docker build fails with `.output directory not found`             | You're on an old Dockerfile. Build output is now `dist/`. Pull latest `Dockerfile` + `.dockerignore`.                                                                              |
+| CI fails on `bun install` (integrity / 401 from private registry) | Already fixed — workflow installs with `--no-cache --registry=https://registry.npmjs.org`. If forking, keep those flags.                                                           |
+| 401/403 from backend after login                                  | Call `setAuthToken(token)` from `@/lib/api` after sign-in; verify the backend accepts `Authorization: Bearer ...` and your CORS allows the `Authorization` header + `credentials`. |
 
 ## License
 
@@ -366,7 +364,7 @@ LOVABLE_API_KEY=...             # used by the AI Gateway in M2
 
 ### Deploy / self-host
 
-- **Lovable hosting**: click *Publish* — auth, DB, and secrets are wired automatically.
+- **Lovable hosting**: click _Publish_ — auth, DB, and secrets are wired automatically.
 - **Self-host (Docker)**: `docker compose up --build`. Provide the `VITE_SUPABASE_*` variables at build time and the server-only secrets at runtime. The Cloudflare Worker SSR build runs `npm run build`; the container serves the `.output/` artifact on port 3000.
 
 ### Roadmap
@@ -401,31 +399,32 @@ call from `/api/chat`. It:
 
 `src/lib/tools/risk.ts` — pure, client-safe.
 
-| Risk | Examples |
-| --- | --- |
-| safe | `plan`, `web_search`, `read_file` of non-sensitive paths |
-| restricted | `write_file`, `run_command` (build/test/git/docker/mv/cp …) |
-| dangerous | `rm -rf`, `mkfs`, `dd`, `sudo`, `curl \| sh`, paths matching `.ssh`, `.aws`, `.env`, `.git`, `id_rsa`, etc. |
+| Risk       | Examples                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| safe       | `plan`, `web_search`, `read_file` of non-sensitive paths                                                    |
+| restricted | `write_file`, `run_command` (build/test/git/docker/mv/cp …)                                                 |
+| dangerous  | `rm -rf`, `mkfs`, `dd`, `sudo`, `curl \| sh`, paths matching `.ssh`, `.aws`, `.env`, `.git`, `id_rsa`, etc. |
 
 ### Approval queue
 
 `approvals` table (extended in this milestone):
 
-| Column | Notes |
-| --- | --- |
-| `id` | UUID |
-| `requested_by` | user id |
-| `conversation_id` | links back to chat |
-| `workspace_id` | nullable |
-| `tool_name`, `action` | which tool fired |
-| `risk_level` | safe / restricted / dangerous |
-| `input_summary` | short preview shown in the UI |
-| `payload` | full JSON input |
-| `status` | pending / approved / denied / expired |
-| `expires_at` | default 24h |
-| `created_at`, `decided_at`, `decided_by` | audit fields |
+| Column                                   | Notes                                 |
+| ---------------------------------------- | ------------------------------------- |
+| `id`                                     | UUID                                  |
+| `requested_by`                           | user id                               |
+| `conversation_id`                        | links back to chat                    |
+| `workspace_id`                           | nullable                              |
+| `tool_name`, `action`                    | which tool fired                      |
+| `risk_level`                             | safe / restricted / dangerous         |
+| `input_summary`                          | short preview shown in the UI         |
+| `payload`                                | full JSON input                       |
+| `status`                                 | pending / approved / denied / expired |
+| `expires_at`                             | default 24h                           |
+| `created_at`, `decided_at`, `decided_by` | audit fields                          |
 
 RLS:
+
 - Any authenticated user can SELECT approvals (so the UI can render them).
 - Only admins can decide approvals.
 - The original requester can update (cancel) their own row.
@@ -440,14 +439,14 @@ and a 5-second poll while on Pending. Linked from Settings → Approvals.
 
 `servers` table now carries everything the future agent-daemon needs:
 
-| Column | Purpose |
-| --- | --- |
-| `daemon_url` | agent endpoint |
-| `daemon_token` | bearer token (server-only) |
-| `workspace_root` | path on the remote host |
-| `enabled` | toggle without deletion |
-| `adapter_mode` | mock / dry-run / remote-agent / ssh |
-| `last_health_at` | last successful health check |
+| Column           | Purpose                             |
+| ---------------- | ----------------------------------- |
+| `daemon_url`     | agent endpoint                      |
+| `daemon_token`   | bearer token (server-only)          |
+| `workspace_root` | path on the remote host             |
+| `enabled`        | toggle without deletion             |
+| `adapter_mode`   | mock / dry-run / remote-agent / ssh |
+| `last_health_at` | last successful health check        |
 
 No outbound connection is opened yet — `remote-agent` and `ssh` modes fall
 back to mock and surface a "not yet connected" note.
