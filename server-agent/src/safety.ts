@@ -1,12 +1,12 @@
 import path from "node:path";
 
 const SECRET_PATTERNS = [
-  /(^|[/\\])\.env($|[.\/\\])/i,
+  /(^|[/\\])\.env($|[./\\])/i,
   /(^|[/\\])\.git($|[/\\])/i,
   /(^|[/\\])\.ssh($|[/\\])/i,
   /(^|[/\\])\.aws($|[/\\])/i,
-  /(^|[/\\])(id_rsa|id_ed25519|id_dsa|id_ecdsa)($|[.\/\\])/i,
-  /(^|[/\\])(credentials|credential|secrets?|tokens?)($|[.\/\\])/i,
+  /(^|[/\\])(id_rsa|id_ed25519|id_dsa|id_ecdsa)($|[./\\])/i,
+  /(^|[/\\])(credentials|credential|secrets?|tokens?)($|[./\\])/i,
   /\.(pem|key|p12|pfx)$/i,
 ];
 
