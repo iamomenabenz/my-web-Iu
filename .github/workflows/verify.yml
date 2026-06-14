@@ -7,6 +7,7 @@ on:
       - main
       - work
       - m5-remote-agent-foundation
+      - m6-remote-agent-execution
 
 permissions:
   contents: read
