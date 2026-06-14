@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ListChecks, MessageSquare, Terminal, FolderTree, Settings } from "lucide-react";
+import { ListChecks, MessageSquare, Terminal, FolderTree, Settings, Rocket } from "lucide-react";
 
 const tabs = [
   { to: "/tasks", label: "Tasks", icon: ListChecks, match: ["/tasks", "/dashboard", "/"] },
+  { to: "/missions", label: "Missions", icon: Rocket, match: ["/missions"] },
   { to: "/chat", label: "Chat", icon: MessageSquare, match: ["/chat"] },
   { to: "/terminal", label: "Terminal", icon: Terminal, match: ["/terminal"] },
   { to: "/files", label: "Files", icon: FolderTree, match: ["/files"] },
@@ -21,7 +22,7 @@ export function BottomTabs() {
       }}
       aria-label="Primary"
     >
-      <ul className="mx-auto grid max-w-2xl grid-cols-5">
+      <ul className="mx-auto grid max-w-2xl grid-cols-6">
         {tabs.map((t) => {
           const active = t.match.some((m) => path === m || (m !== "/" && path.startsWith(m + "/")));
           const Icon = t.icon;
