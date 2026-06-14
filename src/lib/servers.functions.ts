@@ -115,3 +115,104 @@ export const healthCheckServer = createServerFn({ method: "POST" })
     });
     return { ok: res.ok, status, error: res.error, data: res.data };
   });
+
+// Safe smoke test: runs a small, allowlisted set of harmless commands against
+// the daemon to verify end-to-end execution. Admin-only. Tokens never leave
+// the server. Each step is audited. Does not require per-command approval
+// because the command list is fixed and read-only.
+const SMOKE_COMMANDS: ReadonlyArray<{ id: string; command: string; label: string }> = [
+  { id: "pwd", command: "pwd", label: "Working directory" },
+  { id: "ls", command: "ls -la", label: "List workspace" },
+  { id: "node", command: "node --version", label: "Node version" },
+];
+
+export const smokeTestServer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: srv, error } = await supabaseAdmin
+      .from("servers")
+      .select("daemon_url, daemon_token, enabled, adapter_mode, workspace_root")
+      .eq("id", data.id)
+      .single();
+    if (error || !srv) throw new Error(error?.message ?? "Server not found");
+    if (!srv.enabled) throw new Error("Server is disabled. Enable it before running smoke tests.");
+    if (srv.adapter_mode !== "remote-agent")
+      throw new Error(`Smoke test requires adapter_mode 'remote-agent' (got '${srv.adapter_mode}').`);
+    if (!srv.daemon_url || !srv.daemon_token)
+      throw new Error("Server is missing daemon URL or token.");
+
+    const { daemonHealth, daemonExec } = await import("@/lib/tools/remote-agent.server");
+    const cfg = {
+      url: srv.daemon_url,
+      token: srv.daemon_token,
+      workspaceRoot: srv.workspace_root ?? null,
+      timeoutMs: 15_000,
+    };
+
+    const health = await daemonHealth(cfg);
+    const steps: Array<{
+      id: string;
+      label: string;
+      command?: string;
+      ok: boolean;
+      exitCode?: number;
+      stdout?: string;
+      stderr?: string;
+      error?: string;
+      durationMs?: number;
+    }> = [
+      {
+        id: "health",
+        label: "Health check",
+        ok: health.ok,
+        error: health.error,
+        durationMs: undefined,
+      },
+    ];
+
+    if (health.ok) {
+      for (const step of SMOKE_COMMANDS) {
+        const res = await daemonExec(cfg, { command: step.command, timeoutMs: 15_000 });
+        steps.push({
+          id: step.id,
+          label: step.label,
+          command: step.command,
+          ok: res.ok && (res.data?.exitCode ?? 1) === 0,
+          exitCode: res.data?.exitCode,
+          stdout: res.data?.stdout?.slice(0, 4000),
+          stderr: res.data?.stderr?.slice(0, 2000),
+          error: res.error,
+          durationMs: res.data?.durationMs,
+        });
+      }
+    }
+
+    const allOk = steps.every((s) => s.ok);
+    await supabaseAdmin
+      .from("servers")
+      .update({
+        status: health.ok ? "online" : "offline",
+        last_health_at: new Date().toISOString(),
+        last_seen_at: health.ok ? new Date().toISOString() : undefined,
+      })
+      .eq("id", data.id);
+    await supabaseAdmin.from("audit_log").insert({
+      actor: context.userId,
+      action: "server.smoke_test",
+      target: data.id,
+      payload: {
+        ok: allOk,
+        steps: steps.map((s) => ({
+          id: s.id,
+          ok: s.ok,
+          exitCode: s.exitCode,
+          error: s.error ?? null,
+        })),
+      } as never,
+    });
+
+    return { ok: allOk, steps };
+  });
