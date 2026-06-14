@@ -65,3 +65,27 @@ jobs:
 
       - name: Build server-agent
         run: npm run build
+
+  browser-agent:
+    name: Browser-agent verification (scaffold)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: browser-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+
+      - name: Install browser-agent dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck browser-agent
+        run: npm run typecheck
+
+      - name: Build browser-agent
+        run: npm run build
