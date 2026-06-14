@@ -44,10 +44,14 @@ async function runCommand(input: { command?: string; cwd?: string; timeoutMs?: n
   const started = Date.now();
   const child = spawn(command, { cwd, shell: true, env: { PATH: process.env.PATH ?? "" } });
   const logs: string[] = [];
+  const stdoutChunks: string[] = [];
+  const stderrChunks: string[] = [];
   commands.set(commandId, { child, logs, startedAt: started });
   const push = (stream: "stdout" | "stderr", data: Buffer) => {
     const text = data.toString("utf8");
     logs.push(text);
+    if (stream === "stdout") stdoutChunks.push(text);
+    else stderrChunks.push(text);
     log({ commandId, stream, text: text.slice(0, 4000) });
   };
   child.stdout?.on("data", (d: Buffer) => push("stdout", d));
@@ -62,8 +66,8 @@ async function runCommand(input: { command?: string; cwd?: string; timeoutMs?: n
   return {
     commandId,
     exitCode: exitCode ?? -1,
-    stdout: logs.join("").slice(0, 100_000),
-    stderr: "",
+    stdout: stdoutChunks.join("").slice(0, 100_000),
+    stderr: stderrChunks.join("").slice(0, 100_000),
     durationMs: Date.now() - started,
   };
 }

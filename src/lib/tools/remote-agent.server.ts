@@ -11,6 +11,7 @@
 // All requests carry: Authorization: Bearer <daemon_token>.
 
 export interface DaemonConfig {
+  serverId?: string;
   url: string;
   token: string;
   workspaceRoot?: string | null;
@@ -177,7 +178,7 @@ export async function resolveDaemonConfig(
   if (!serverId) return null;
   const { data: srv } = await supabaseAdmin
     .from("servers")
-    .select("daemon_url, daemon_token, workspace_root, enabled, adapter_mode")
+    .select("id, daemon_url, daemon_token, workspace_root, enabled, adapter_mode")
     .eq("id", serverId)
     .maybeSingle();
   const s = srv as {
@@ -186,11 +187,13 @@ export async function resolveDaemonConfig(
     workspace_root?: string | null;
     enabled?: boolean | null;
     adapter_mode?: string | null;
+    id?: string | null;
   } | null;
   if (!s || !s.enabled || s.adapter_mode !== "remote-agent" || !s.daemon_url || !s.daemon_token) {
     return null;
   }
   return {
+    serverId: s.id ?? serverId,
     url: s.daemon_url,
     token: s.daemon_token,
     workspaceRoot: s.workspace_root ?? null,

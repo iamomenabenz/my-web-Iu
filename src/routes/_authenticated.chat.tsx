@@ -96,7 +96,7 @@ function ChatPage() {
     const content = (text ?? input).trim();
     if (!content || isStreaming) return;
     setInput("");
-    await sendMessage({ text: content }, { body: { model: backendModel } });
+    await sendMessage({ text: content }, { body: { model: backendModel, workspaceId } });
     requestAnimationFrame(() => taRef.current?.focus());
   }
 

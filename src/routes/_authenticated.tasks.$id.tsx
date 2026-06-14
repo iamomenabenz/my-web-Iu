@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getTask, getTests, getTerminalLogs } from "@/lib/api";
+import type { Task } from "@/lib/mock-data";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ArrowLeft, CheckCircle2, Circle, XCircle, MoreVertical } from "lucide-react";
@@ -40,7 +41,7 @@ const PHASES = [
 ] as const;
 
 function TaskDetail() {
-  const task = Route.useLoaderData();
+  const task = Route.useLoaderData() as Task;
   const [tab, setTab] = useState<Tab>("Overview");
   const { data: tests } = useQuery({
     queryKey: ["tests", task.id],

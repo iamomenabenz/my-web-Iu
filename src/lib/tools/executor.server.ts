@@ -33,6 +33,7 @@ export interface ToolResult {
   ok: boolean;
   pending?: boolean;
   approvalId?: string;
+  executionId?: string;
   mode: AdapterMode;
   risk: "safe" | "restricted" | "dangerous";
   summary: string;
@@ -41,7 +42,7 @@ export interface ToolResult {
 }
 
 async function audit(
-  ctx: Pick<ExecContext, "workspaceId" | "userId">,
+  ctx: Pick<ExecContext, "conversationId" | "workspaceId" | "userId">,
   action: string,
   target: string,
   payload: Record<string, unknown>,
@@ -53,10 +54,73 @@ async function audit(
       workspace_id: ctx.workspaceId ?? null,
       action,
       target,
-      payload: payload as never,
+      payload: {
+        conversation_id: ctx.conversationId ?? null,
+        timestamp: new Date().toISOString(),
+        ...payload,
+      } as never,
     });
   } catch (e) {
     console.error("[audit] insert failed", e);
+  }
+}
+
+async function recordExecution(input: {
+  ctx: ExecContext;
+  tool: ToolName;
+  risk: "safe" | "restricted" | "dangerous";
+  summary: string;
+  status: "pending" | "running" | "success" | "error" | "rejected";
+  payload: Record<string, unknown>;
+  result?: unknown;
+  error?: string | null;
+  approvalId?: string | null;
+  serverId?: string | null;
+  executionId?: string | null;
+}) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const row = {
+      approval_id: input.approvalId ?? null,
+      conversation_id: input.ctx.conversationId,
+      workspace_id: input.ctx.workspaceId ?? null,
+      server_id: input.serverId ?? null,
+      user_id: input.ctx.userId,
+      tool_name: input.tool,
+      risk_level: input.risk,
+      adapter_mode: input.ctx.adapterMode,
+      status: input.status,
+      input_summary: input.summary,
+      payload: input.payload as never,
+      result: input.result === undefined ? null : (input.result as never),
+      error: input.error ?? null,
+      finished_at: ["success", "error", "rejected"].includes(input.status)
+        ? new Date().toISOString()
+        : null,
+    };
+    if (input.executionId) {
+      await supabaseAdmin.from("tool_executions").update(row).eq("id", input.executionId);
+      return input.executionId;
+    }
+    if (input.approvalId && input.status !== "pending") {
+      const { data: existing } = await supabaseAdmin
+        .from("tool_executions")
+        .select("id")
+        .eq("approval_id", input.approvalId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const existingId = (existing as { id?: string } | null)?.id;
+      if (existingId) {
+        await supabaseAdmin.from("tool_executions").update(row).eq("id", existingId);
+        return existingId;
+      }
+    }
+    const { data } = await supabaseAdmin.from("tool_executions").insert(row).select("id").single();
+    return (data as { id?: string } | null)?.id ?? null;
+  } catch (e) {
+    console.error("[tool_executions] write failed", e);
+    return null;
   }
 }
 
@@ -129,11 +193,24 @@ export async function executeTool(
     };
   }
 
+  const executionId = await recordExecution({
+    ctx,
+    tool,
+    risk,
+    summary,
+    status: "pending",
+    payload: input,
+    approvalId: approval.id,
+  });
+
   await audit(ctx, `approval.requested`, approval.id, {
     tool,
     risk,
     summary,
     mode: ctx.adapterMode,
+    status: "pending",
+    approval_id: approval.id,
+    execution_id: executionId,
   });
   await notify({
     userId: null, // broadcast to admins; notif RLS allows broadcast rows
@@ -147,6 +224,7 @@ export async function executeTool(
     ok: false,
     pending: true,
     approvalId: approval.id,
+    executionId: executionId ?? undefined,
     mode: ctx.adapterMode,
     risk,
     summary,
@@ -209,6 +287,7 @@ export async function executeApproved(
   tool: ToolName,
   input: Record<string, unknown>,
   ctx: ExecContext,
+  opts: { approvalId?: string | null } = {},
 ): Promise<ToolResult> {
   const summary = summarizeInput(tool, input);
   const risk = classifyRisk({ tool, input }).risk;
@@ -224,10 +303,17 @@ export async function executeApproved(
         note: "Remote-agent adapter selected but no enabled server is attached to this workspace.",
       };
     }
-    if (tool === "run_command") return runExecRemote(cfg, input, ctx, summary);
-    if (tool === "read_file") return runReadRemote(cfg, input, ctx, summary);
-    if (tool === "write_file") return runWriteRemote(cfg, input, ctx, summary);
-    if (tool === "delete_file") return runDeleteRemote(cfg, input, ctx, summary);
+    await audit(ctx, "approval.execution_started", opts.approvalId ?? "approved-tool", {
+      tool,
+      risk,
+      summary,
+      server_id: cfg.serverId ?? null,
+      status: "running",
+    });
+    if (tool === "run_command") return runExecRemote(cfg, input, ctx, summary, opts.approvalId);
+    if (tool === "read_file") return runReadRemote(cfg, input, ctx, summary, opts.approvalId);
+    if (tool === "write_file") return runWriteRemote(cfg, input, ctx, summary, opts.approvalId);
+    if (tool === "delete_file") return runDeleteRemote(cfg, input, ctx, summary, opts.approvalId);
   }
 
   return mockOrDryRun(tool, input, ctx, summary, risk, {
@@ -257,7 +343,22 @@ async function runReadOnlyRemote(
         : tool === "get_workspace_info"
           ? await daemonWorkspaceInfo(cfg)
           : await daemonLogs(cfg, { commandId, limit });
-  await audit(ctx, `tool.${tool}.remote`, "daemon", { summary, ok: r.ok });
+  await audit(ctx, `tool.${tool}.remote`, "daemon", {
+    summary,
+    ok: r.ok,
+    server_id: cfg.serverId ?? null,
+  });
+  await recordExecution({
+    ctx,
+    tool,
+    risk: "safe",
+    summary,
+    status: r.ok ? "success" : "error",
+    payload: input,
+    result: r.data,
+    error: r.error ?? null,
+    serverId: cfg.serverId ?? null,
+  });
   if (!r.ok) return { ok: false, mode: "remote-agent", risk: "safe", summary, note: r.error };
   return { ok: true, mode: "remote-agent", risk: "safe", summary, data: r.data };
 }
@@ -267,16 +368,41 @@ async function runExecRemote(
   input: Record<string, unknown>,
   ctx: ExecContext,
   summary: string,
+  approvalId?: string | null,
 ): Promise<ToolResult> {
+  await recordExecution({
+    ctx,
+    tool: "run_command",
+    risk: "restricted",
+    summary,
+    status: "running",
+    payload: input,
+    serverId: cfg.serverId ?? null,
+    approvalId,
+  });
   const r = await daemonExec(cfg, {
     command: String(input.command ?? ""),
     cwd: typeof input.cwd === "string" ? input.cwd : undefined,
+    timeoutMs: typeof input.timeoutMs === "number" ? input.timeoutMs : undefined,
   });
   await audit(ctx, "tool.run_command.remote", "daemon", {
     summary,
     ok: r.ok,
     status: r.status,
+    server_id: cfg.serverId ?? null,
     exitCode: r.data?.exitCode,
+  });
+  await recordExecution({
+    ctx,
+    tool: "run_command",
+    risk: "restricted",
+    summary,
+    status: r.ok ? "success" : "error",
+    payload: input,
+    result: r.data,
+    error: r.error ?? null,
+    serverId: cfg.serverId ?? null,
+    approvalId,
   });
   if (!r.ok) {
     return { ok: false, mode: "remote-agent", risk: "restricted", summary, note: r.error };
@@ -289,9 +415,26 @@ async function runReadRemote(
   input: Record<string, unknown>,
   ctx: ExecContext,
   summary: string,
+  approvalId?: string | null,
 ): Promise<ToolResult> {
   const r = await daemonReadFile(cfg, { path: String(input.path ?? "") });
-  await audit(ctx, "tool.read_file.remote", "daemon", { summary, ok: r.ok });
+  await audit(ctx, "tool.read_file.remote", "daemon", {
+    summary,
+    ok: r.ok,
+    server_id: cfg.serverId ?? null,
+  });
+  await recordExecution({
+    ctx,
+    tool: "read_file",
+    risk: classifyRisk({ tool: "read_file", input }).risk,
+    summary,
+    status: r.ok ? "success" : "error",
+    payload: input,
+    result: r.data,
+    error: r.error ?? null,
+    serverId: cfg.serverId ?? null,
+    approvalId,
+  });
   if (!r.ok) return { ok: false, mode: "remote-agent", risk: "safe", summary, note: r.error };
   return { ok: true, mode: "remote-agent", risk: "safe", summary, data: r.data };
 }
@@ -301,12 +444,29 @@ async function runWriteRemote(
   input: Record<string, unknown>,
   ctx: ExecContext,
   summary: string,
+  approvalId?: string | null,
 ): Promise<ToolResult> {
   const r = await daemonWriteFile(cfg, {
     path: String(input.path ?? ""),
     content: String(input.content ?? ""),
   });
-  await audit(ctx, "tool.write_file.remote", "daemon", { summary, ok: r.ok });
+  await audit(ctx, "tool.write_file.remote", "daemon", {
+    summary,
+    ok: r.ok,
+    server_id: cfg.serverId ?? null,
+  });
+  await recordExecution({
+    ctx,
+    tool: "write_file",
+    risk: "restricted",
+    summary,
+    status: r.ok ? "success" : "error",
+    payload: { ...input, content: String(input.content ?? "").slice(0, 4000) },
+    result: r.data,
+    error: r.error ?? null,
+    serverId: cfg.serverId ?? null,
+    approvalId,
+  });
   if (!r.ok) return { ok: false, mode: "remote-agent", risk: "restricted", summary, note: r.error };
   return { ok: true, mode: "remote-agent", risk: "restricted", summary, data: r.data };
 }
@@ -316,9 +476,26 @@ async function runDeleteRemote(
   input: Record<string, unknown>,
   ctx: ExecContext,
   summary: string,
+  approvalId?: string | null,
 ): Promise<ToolResult> {
   const r = await daemonDeleteFile(cfg, { path: String(input.path ?? "") });
-  await audit(ctx, "tool.delete_file.remote", "daemon", { summary, ok: r.ok });
+  await audit(ctx, "tool.delete_file.remote", "daemon", {
+    summary,
+    ok: r.ok,
+    server_id: cfg.serverId ?? null,
+  });
+  await recordExecution({
+    ctx,
+    tool: "delete_file",
+    risk: "restricted",
+    summary,
+    status: r.ok ? "success" : "error",
+    payload: input,
+    result: r.data,
+    error: r.error ?? null,
+    serverId: cfg.serverId ?? null,
+    approvalId,
+  });
   if (!r.ok) return { ok: false, mode: "remote-agent", risk: "restricted", summary, note: r.error };
   return { ok: true, mode: "remote-agent", risk: "restricted", summary, data: r.data };
 }
