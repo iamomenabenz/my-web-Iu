@@ -5,11 +5,7 @@
 import { generateText } from "ai";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { buildPlannerSystemPrompt, buildPlannerUserPrompt } from "./prompts.server";
-import {
-  PERMISSION_TIERS,
-  TOOL_REGISTRY,
-  type PermissionLevel,
-} from "@/lib/tools/registry";
+import { PERMISSION_TIERS, TOOL_REGISTRY, type PermissionLevel } from "@/lib/tools/registry";
 import type { ToolName } from "@/lib/tools/risk";
 import { executeTool, type AdapterMode } from "@/lib/tools/executor.server";
 
@@ -63,10 +59,7 @@ export async function planMission(missionId: string): Promise<{
   if (error || !mission) return { ok: false, error: error?.message ?? "Mission not found" };
   const m = mission as MissionRow & { title: string };
 
-  await supabaseAdmin
-    .from("missions")
-    .update({ status: "planning" })
-    .eq("id", m.id);
+  await supabaseAdmin.from("missions").update({ status: "planning" }).eq("id", m.id);
 
   const level = (m.permission_level as PermissionLevel) ?? "safe";
   const model = m.model || "google/gemini-3-flash-preview";
@@ -138,10 +131,7 @@ export async function planMission(missionId: string): Promise<{
   }
 
   const title = planJson?.title ? String(planJson.title).slice(0, 200) : m.title;
-  await supabaseAdmin
-    .from("missions")
-    .update({ title, status: "running" })
-    .eq("id", m.id);
+  await supabaseAdmin.from("missions").update({ title, status: "running" }).eq("id", m.id);
   await audit(m.id, m.user_id, "mission.planned", {
     step_count: rows.length,
     model,
@@ -197,17 +187,15 @@ export async function tickMission(missionId: string): Promise<{
     .order("step_number", { ascending: true })
     .limit(1)
     .maybeSingle();
-  const next = nextStepData as
-    | {
-        id: string;
-        step_number: number;
-        title: string;
-        tool_name: string;
-        status: string;
-        payload: { input?: Record<string, unknown> } | null;
-        approval_id: string | null;
-      }
-    | null;
+  const next = nextStepData as {
+    id: string;
+    step_number: number;
+    title: string;
+    tool_name: string;
+    status: string;
+    payload: { input?: Record<string, unknown> } | null;
+    approval_id: string | null;
+  } | null;
 
   if (!next) {
     // No remaining steps — compute final status.
@@ -270,9 +258,12 @@ export async function tickMission(missionId: string): Promise<{
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      const exec = te as
-        | { id: string; status: string; error: string | null; result: unknown }
-        | null;
+      const exec = te as {
+        id: string;
+        status: string;
+        error: string | null;
+        result: unknown;
+      } | null;
       if (!exec || exec.status === "pending" || exec.status === "running") {
         return {
           ok: true,
@@ -285,8 +276,11 @@ export async function tickMission(missionId: string): Promise<{
         .update({
           status: exec.status === "success" ? "success" : "failed",
           tool_execution_id: exec.id,
-          output_summary: exec.status === "success" ? "Approved & executed." : exec.error ?? "Execution failed.",
-          error: exec.status === "success" ? null : exec.error ?? null,
+          output_summary:
+            exec.status === "success"
+              ? "Approved & executed."
+              : (exec.error ?? "Execution failed."),
+          error: exec.status === "success" ? null : (exec.error ?? null),
           finished_at: new Date().toISOString(),
         })
         .eq("id", next.id);
@@ -295,14 +289,8 @@ export async function tickMission(missionId: string): Promise<{
   }
 
   // Pending step — execute via the standard executor.
-  await supabaseAdmin
-    .from("missions")
-    .update({ status: "running" })
-    .eq("id", m.id);
-  await supabaseAdmin
-    .from("mission_steps")
-    .update({ status: "running" })
-    .eq("id", next.id);
+  await supabaseAdmin.from("missions").update({ status: "running" }).eq("id", m.id);
+  await supabaseAdmin.from("mission_steps").update({ status: "running" }).eq("id", next.id);
 
   const toolName = next.tool_name as ToolName;
   if (!TOOL_REGISTRY[toolName]) {
@@ -340,10 +328,7 @@ export async function tickMission(missionId: string): Promise<{
         output_summary: result.note ?? "Awaiting approval.",
       })
       .eq("id", next.id);
-    await supabaseAdmin
-      .from("missions")
-      .update({ status: "waiting_for_approval" })
-      .eq("id", m.id);
+    await supabaseAdmin.from("missions").update({ status: "waiting_for_approval" }).eq("id", m.id);
     return { ok: true, status: "waiting_for_approval", note: result.note };
   }
 
@@ -353,7 +338,7 @@ export async function tickMission(missionId: string): Promise<{
       status: result.ok ? "success" : "failed",
       input_summary: result.summary,
       output_summary: result.note ?? (result.ok ? "Step succeeded." : "Step failed."),
-      error: result.ok ? null : result.note ?? "Tool reported failure.",
+      error: result.ok ? null : (result.note ?? "Tool reported failure."),
       finished_at: new Date().toISOString(),
     })
     .eq("id", next.id);
@@ -362,7 +347,11 @@ export async function tickMission(missionId: string): Promise<{
     // Stop on first failure for safety; user can re-run or cancel.
     await supabaseAdmin
       .from("missions")
-      .update({ status: "failed", finished_at: new Date().toISOString(), error: result.note ?? null })
+      .update({
+        status: "failed",
+        finished_at: new Date().toISOString(),
+        error: result.note ?? null,
+      })
       .eq("id", m.id);
     return { ok: false, status: "failed", note: result.note };
   }

@@ -113,7 +113,15 @@ export const TOOL_REGISTRY: Record<ToolName, ToolDescriptor> = {
 
 /** Tools allowed at each permission level (cumulative). */
 export const PERMISSION_TIERS = {
-  safe: ["plan", "web_search", "read_file", "list_files", "search_files", "get_workspace_info", "get_logs"],
+  safe: [
+    "plan",
+    "web_search",
+    "read_file",
+    "list_files",
+    "search_files",
+    "get_workspace_info",
+    "get_logs",
+  ],
   restricted: [
     "plan",
     "web_search",

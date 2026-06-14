@@ -2,12 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
-import {
-  cancelMission,
-  getMission,
-  pauseMission,
-  tickMissionFn,
-} from "@/lib/missions/functions";
+import { cancelMission, getMission, pauseMission, tickMissionFn } from "@/lib/missions/functions";
 import {
   ChevronLeft,
   CheckCircle2,
@@ -180,20 +175,13 @@ function MissionDetailPage() {
           </li>
         )}
         {steps.map((s) => (
-          <li
-            key={s.id}
-            className="rounded-2xl border border-border/70 bg-card/70 p-3"
-          >
+          <li key={s.id} className="rounded-2xl border border-border/70 bg-card/70 p-3">
             <div className="flex items-center gap-2">
               <StepIcon status={s.status} />
-              <span className="font-mono text-[11px] text-muted-foreground">
-                #{s.step_number}
-              </span>
+              <span className="font-mono text-[11px] text-muted-foreground">#{s.step_number}</span>
               <span className="flex-1 truncate text-[13px] font-medium">{s.title}</span>
               {s.tool_name && (
-                <span className="font-mono text-[10.5px] text-muted-foreground">
-                  {s.tool_name}
-                </span>
+                <span className="font-mono text-[10.5px] text-muted-foreground">{s.tool_name}</span>
               )}
             </div>
             {s.input_summary && (
@@ -227,10 +215,8 @@ function MissionDetailPage() {
 }
 
 function StepIcon({ status }: { status: string }) {
-  if (status === "success")
-    return <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />;
-  if (status === "failed")
-    return <AlertCircle className="h-4 w-4 text-destructive shrink-0" />;
+  if (status === "success") return <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />;
+  if (status === "failed") return <AlertCircle className="h-4 w-4 text-destructive shrink-0" />;
   if (status === "waiting_for_approval")
     return <ShieldAlert className="h-4 w-4 text-amber-400 shrink-0" />;
   if (status === "running")

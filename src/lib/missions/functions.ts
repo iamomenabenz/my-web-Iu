@@ -18,8 +18,7 @@ export const createMission = createServerFn({ method: "POST" })
   .inputValidator((input) => createSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const title =
-      data.title?.trim() || data.goal.split(/\n/)[0].slice(0, 80) || "Untitled mission";
+    const title = data.title?.trim() || data.goal.split(/\n/)[0].slice(0, 80) || "Untitled mission";
     const { data: row, error } = await supabase
       .from("missions")
       .insert({
@@ -53,9 +52,7 @@ export const listMissions = createServerFn({ method: "GET" })
 
 export const getMission = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: mission, error } = await context.supabase
       .from("missions")
@@ -81,9 +78,7 @@ export const getMission = createServerFn({ method: "GET" })
 
 export const startMission = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     // Ownership check via RLS-bound client.
     const { data: own, error: ownErr } = await context.supabase
@@ -101,9 +96,7 @@ export const startMission = createServerFn({ method: "POST" })
 
 export const tickMissionFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { data: own, error: ownErr } = await context.supabase
       .from("missions")
@@ -117,9 +110,7 @@ export const tickMissionFn = createServerFn({ method: "POST" })
 
 export const cancelMission = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("missions")
@@ -132,9 +123,7 @@ export const cancelMission = createServerFn({ method: "POST" })
 
 export const pauseMission = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) =>
-    z.object({ id: z.string().uuid() }).parse(input),
-  )
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("missions")

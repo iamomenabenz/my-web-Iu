@@ -77,9 +77,7 @@ function MissionsPage() {
       </div>
 
       <div className="mt-4 space-y-2.5">
-        {isLoading && (
-          <div className="text-[12.5px] text-muted-foreground px-1">Loading…</div>
-        )}
+        {isLoading && <div className="text-[12.5px] text-muted-foreground px-1">Loading…</div>}
         {!isLoading && missions.length === 0 && (
           <div className="rounded-2xl border border-border/70 bg-card/40 px-4 py-8 text-center">
             <Rocket className="mx-auto h-6 w-6 text-muted-foreground" />
@@ -139,8 +137,7 @@ function MissionRow({ mission }: { mission: MissionListItem }) {
 }
 
 function StatusIcon({ status }: { status: string }) {
-  if (status === "success")
-    return <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />;
+  if (status === "success") return <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />;
   if (status === "failed" || status === "cancelled")
     return <AlertCircle className="h-4 w-4 text-destructive shrink-0" />;
   if (status === "waiting_for_approval")
