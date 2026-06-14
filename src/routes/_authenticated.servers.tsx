@@ -45,8 +45,11 @@ function ServersPage() {
   const upsertFn = useServerFn(upsertServer);
   const deleteFn = useServerFn(deleteServer);
   const healthFn = useServerFn(healthCheckServer);
+  const smokeFn = useServerFn(smokeTestServer);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [openSmokeId, setOpenSmokeId] = useState<string | null>(null);
+  const [pingResult, setPingResult] = useState<Record<string, { ok: boolean; msg: string }>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["servers"],
@@ -75,7 +78,46 @@ function ServersPage() {
   });
   const health = useMutation({
     mutationFn: (id: string) => healthFn({ data: { id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["servers"] }),
+    onSuccess: (res, id) => {
+      qc.invalidateQueries({ queryKey: ["servers"] });
+      setPingResult((m) => ({
+        ...m,
+        [id]: {
+          ok: res.ok,
+          msg: res.ok
+            ? `Connection OK${res.data?.version ? ` · daemon ${res.data.version}` : ""}`
+            : (res.error ?? "Connection failed"),
+        },
+      }));
+    },
+    onError: (err, id) => {
+      setPingResult((m) => ({
+        ...m,
+        [id]: { ok: false, msg: err instanceof Error ? err.message : "Connection failed" },
+      }));
+    },
+  });
+  type SmokeResult = Awaited<ReturnType<typeof smokeFn>>;
+  const [smokeResults, setSmokeResults] = useState<Record<string, SmokeResult>>({});
+  const [smokeErrors, setSmokeErrors] = useState<Record<string, string>>({});
+  const smoke = useMutation({
+    mutationFn: (id: string) => smokeFn({ data: { id } }),
+    onSuccess: (res, id) => {
+      qc.invalidateQueries({ queryKey: ["servers"] });
+      setSmokeResults((m) => ({ ...m, [id]: res }));
+      setSmokeErrors((m) => {
+        const { [id]: _omit, ...rest } = m;
+        return rest;
+      });
+      setOpenSmokeId(id);
+    },
+    onError: (err, id) => {
+      setSmokeErrors((m) => ({
+        ...m,
+        [id]: err instanceof Error ? err.message : "Smoke test failed",
+      }));
+      setOpenSmokeId(id);
+    },
   });
 
   const servers = (data?.servers ?? []) as ServerRow[];
