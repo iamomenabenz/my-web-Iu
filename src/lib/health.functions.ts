@@ -60,9 +60,9 @@ export const getSystemHealth = createServerFn({ method: "GET" })
     const hasLovable = Boolean(process.env.LOVABLE_API_KEY);
     const hasFallback = Boolean(
       process.env.OPENAI_API_KEY ||
-        process.env.ANTHROPIC_API_KEY ||
-        process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
-        process.env.OPENROUTER_API_KEY,
+      process.env.ANTHROPIC_API_KEY ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.OPENROUTER_API_KEY,
     );
     checks.push({
       id: "model",
