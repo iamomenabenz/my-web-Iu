@@ -1,7 +1,7 @@
 # Omena Browser-Agent (M9 scaffold)
 
 A headless-browser daemon that Omena Codex missions can drive through the
-browser-* tools (`browser_navigate`, `browser_extract`, `browser_click`,
+browser-\* tools (`browser_navigate`, `browser_extract`, `browser_click`,
 `browser_fill`, `browser_screenshot`).
 
 > **This scaffold is shipped DISABLED.** No Playwright dependency is declared;
@@ -18,7 +18,7 @@ Per M9 safety policy:
 - Without those env vars, the executor refuses browser tools and the mission
   planner is told the browser-agent is disabled (so it never proposes one).
 - Even when env vars are set, the daemon itself refuses to act until
-  `ENABLE_BROWSER_AGENT=1` is set in *this* service's environment.
+  `ENABLE_BROWSER_AGENT=1` is set in _this_ service's environment.
 - M6 approvals are never bypassed — every browser action is a restricted or
   dangerous tool that pauses the mission until a human approves it.
 
@@ -42,14 +42,14 @@ on the daemon host; only structured JSON results return to Omena Codex.
 
 ## Endpoints
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| GET | `/health` | Liveness + enabled flag |
-| POST | `/sessions/navigate` | `{ url, waitFor? }` → `{ sessionId, status, finalUrl }` |
-| POST | `/sessions/extract` | `{ selector?, format? }` → `{ content, length }` |
-| POST | `/sessions/click` | `{ selector }` → `{ clicked: true }` |
-| POST | `/sessions/fill` | `{ selector, value }` → `{ filled: true }` (refuses credential selectors) |
-| POST | `/sessions/screenshot` | `{ url?, fullPage? }` → `{ bytes, mime, base64 }` |
+| Method | Path                   | Purpose                                                                   |
+| ------ | ---------------------- | ------------------------------------------------------------------------- |
+| GET    | `/health`              | Liveness + enabled flag                                                   |
+| POST   | `/sessions/navigate`   | `{ url, waitFor? }` → `{ sessionId, status, finalUrl }`                   |
+| POST   | `/sessions/extract`    | `{ selector?, format? }` → `{ content, length }`                          |
+| POST   | `/sessions/click`      | `{ selector }` → `{ clicked: true }`                                      |
+| POST   | `/sessions/fill`       | `{ selector, value }` → `{ filled: true }` (refuses credential selectors) |
+| POST   | `/sessions/screenshot` | `{ url?, fullPage? }` → `{ bytes, mime, base64 }`                         |
 
 All non-health endpoints require `Authorization: Bearer <DAEMON_TOKEN>`.
 
