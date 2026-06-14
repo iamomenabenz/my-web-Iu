@@ -8,8 +8,21 @@ import {
   upsertServer,
   deleteServer,
   healthCheckServer,
+  smokeTestServer,
 } from "@/lib/servers.functions";
-import { ChevronLeft, Server as ServerIcon, Activity, Trash2, Plus, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  Server as ServerIcon,
+  Activity,
+  Trash2,
+  Plus,
+  Loader2,
+  PlugZap,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/servers")({
   head: () => ({ meta: [{ title: "Servers — Omena Codex" }] }),
