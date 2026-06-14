@@ -1,16 +1,111 @@
+# Omena Codex — full self-hosted stack.
+#
+# Quick start (development / smoke test):
+#   cp .env.example .env
+#   # fill in VITE_SUPABASE_* + SUPABASE_* + LOVABLE_API_KEY (or provider key)
+#   docker compose up -d app server-agent
+#
+# Production: also enable the `caddy` reverse proxy and (optionally) the
+# `browser-agent` service. The browser-agent stays disabled by default —
+# the app's planner ignores its tools until BROWSER_AGENT_URL+TOKEN are set.
+#
+# See docs/DEPLOYMENT.md for the full production checklist.
+
 services:
-  omena-codex:
+  app:
     build: .
     image: omena-codex:latest
+    container_name: omena-app
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       NODE_ENV: production
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
-      VITE_WS_URL: ${VITE_WS_URL:-}
+      PORT: 3000
+      # Public (browser) — bundled at build time:
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${VITE_SUPABASE_PUBLISHABLE_KEY:-}
+      VITE_SUPABASE_PROJECT_ID: ${VITE_SUPABASE_PROJECT_ID:-}
+      # Server-only secrets — never bundled:
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_PUBLISHABLE_KEY: ${SUPABASE_PUBLISHABLE_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      LOVABLE_API_KEY: ${LOVABLE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      WEBHOOK_SECRET: ${WEBHOOK_SECRET:-}
+      # Browser-agent integration (LEAVE BLANK to keep disabled):
+      BROWSER_AGENT_URL: ${BROWSER_AGENT_URL:-}
+      BROWSER_AGENT_TOKEN: ${BROWSER_AGENT_TOKEN:-}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000/"]
       interval: 30s
       timeout: 5s
       retries: 3
+    depends_on:
+      - server-agent
+
+  server-agent:
+    build: ./server-agent
+    image: omena-server-agent:latest
+    container_name: omena-server-agent
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787" # bind to loopback; expose via reverse proxy only
+    environment:
+      PORT: 8787
+      DAEMON_TOKEN: ${SERVER_AGENT_TOKEN:?SERVER_AGENT_TOKEN is required}
+      WORKSPACE_ROOT: /workspace
+      COMMAND_TIMEOUT_MS: ${SERVER_AGENT_COMMAND_TIMEOUT_MS:-60000}
+      MAX_FILE_BYTES: ${SERVER_AGENT_MAX_FILE_BYTES:-1048576}
+    volumes:
+      - ${SERVER_AGENT_WORKSPACE:-./workspace}:/workspace
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- --header=\"authorization: Bearer ${SERVER_AGENT_TOKEN}\" http://localhost:8787/health || exit 1",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Browser-agent — OPT-IN. Uncomment + set BROWSER_AGENT_* secrets to enable.
+  # Requires installing Playwright + Chromium inside the image (M10 ships
+  # scaffold only; full runtime is a deliberate admin step).
+  #
+  # browser-agent:
+  #   build: ./browser-agent
+  #   image: omena-browser-agent:latest
+  #   container_name: omena-browser-agent
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:8788:8788"
+  #   environment:
+  #     PORT: 8788
+  #     DAEMON_TOKEN: ${BROWSER_AGENT_TOKEN:?set BROWSER_AGENT_TOKEN to enable}
+  #     ALLOWED_ORIGINS: ${BROWSER_AGENT_ALLOWED_ORIGINS:-}
+  #     ACTION_TIMEOUT_MS: ${BROWSER_AGENT_TIMEOUT_MS:-20000}
+
+  # Reverse proxy + automatic TLS (optional, recommended for production).
+  # Uncomment, point your DNS at this host, and set DOMAIN in .env.
+  #
+  # caddy:
+  #   image: caddy:2
+  #   container_name: omena-caddy
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   environment:
+  #     DOMAIN: ${DOMAIN:?set DOMAIN to enable TLS}
+  #   volumes:
+  #     - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   depends_on:
+  #     - app
+
+volumes:
+  caddy_data:
+  caddy_config:

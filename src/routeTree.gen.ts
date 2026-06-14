@@ -21,6 +21,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated.servers'
 import { Route as AuthenticatedMissionsRouteImport } from './routes/_authenticated.missions'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated.integrations'
+import { Route as AuthenticatedHealthRouteImport } from './routes/_authenticated.health'
 import { Route as AuthenticatedFilesRouteImport } from './routes/_authenticated.files'
 import { Route as AuthenticatedDatabasesRouteImport } from './routes/_authenticated.databases'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
@@ -92,6 +93,11 @@ const AuthenticatedIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedHealthRoute = AuthenticatedHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedFilesRoute = AuthenticatedFilesRouteImport.update({
   id: '/files',
   path: '/files',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/databases': typeof AuthenticatedDatabasesRoute
   '/files': typeof AuthenticatedFilesRouteWithChildren
+  '/health': typeof AuthenticatedHealthRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/missions': typeof AuthenticatedMissionsRouteWithChildren
   '/servers': typeof AuthenticatedServersRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/databases': typeof AuthenticatedDatabasesRoute
   '/files': typeof AuthenticatedFilesRouteWithChildren
+  '/health': typeof AuthenticatedHealthRoute
   '/integrations': typeof AuthenticatedIntegrationsRoute
   '/missions': typeof AuthenticatedMissionsRouteWithChildren
   '/servers': typeof AuthenticatedServersRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/databases': typeof AuthenticatedDatabasesRoute
   '/_authenticated/files': typeof AuthenticatedFilesRouteWithChildren
+  '/_authenticated/health': typeof AuthenticatedHealthRoute
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
   '/_authenticated/missions': typeof AuthenticatedMissionsRouteWithChildren
   '/_authenticated/servers': typeof AuthenticatedServersRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/databases'
     | '/files'
+    | '/health'
     | '/integrations'
     | '/missions'
     | '/servers'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/databases'
     | '/files'
+    | '/health'
     | '/integrations'
     | '/missions'
     | '/servers'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/databases'
     | '/_authenticated/files'
+    | '/_authenticated/health'
     | '/_authenticated/integrations'
     | '/_authenticated/missions'
     | '/_authenticated/servers'
@@ -378,6 +390,13 @@ declare module '@tanstack/react-router' {
       path: '/integrations'
       fullPath: '/integrations'
       preLoaderRoute: typeof AuthenticatedIntegrationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/health': {
+      id: '/_authenticated/health'
+      path: '/health'
+      fullPath: '/health'
+      preLoaderRoute: typeof AuthenticatedHealthRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/files': {
@@ -496,6 +515,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDatabasesRoute: typeof AuthenticatedDatabasesRoute
   AuthenticatedFilesRoute: typeof AuthenticatedFilesRouteWithChildren
+  AuthenticatedHealthRoute: typeof AuthenticatedHealthRoute
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
   AuthenticatedMissionsRoute: typeof AuthenticatedMissionsRouteWithChildren
   AuthenticatedServersRoute: typeof AuthenticatedServersRoute
@@ -515,6 +535,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDatabasesRoute: AuthenticatedDatabasesRoute,
   AuthenticatedFilesRoute: AuthenticatedFilesRouteWithChildren,
+  AuthenticatedHealthRoute: AuthenticatedHealthRoute,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
   AuthenticatedMissionsRoute: AuthenticatedMissionsRouteWithChildren,
   AuthenticatedServersRoute: AuthenticatedServersRoute,

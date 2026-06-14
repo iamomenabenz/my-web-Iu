@@ -225,6 +225,14 @@ function SettingsPage() {
             right={<ChevronRight className="h-4 w-4" />}
           />
         </Link>
+        <Link to="/health" className="block">
+          <Row
+            icon={ShieldCheck}
+            label="System health"
+            hint="App, database, agents, providers"
+            right={<ChevronRight className="h-4 w-4" />}
+          />
+        </Link>
       </Section>
 
       <Section title="Permissions">
