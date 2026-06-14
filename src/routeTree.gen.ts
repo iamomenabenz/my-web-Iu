@@ -19,6 +19,7 @@ import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedStorageRouteImport } from './routes/_authenticated.storage'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedServersRouteImport } from './routes/_authenticated.servers'
+import { Route as AuthenticatedMissionsRouteImport } from './routes/_authenticated.missions'
 import { Route as AuthenticatedIntegrationsRouteImport } from './routes/_authenticated.integrations'
 import { Route as AuthenticatedFilesRouteImport } from './routes/_authenticated.files'
 import { Route as AuthenticatedDatabasesRouteImport } from './routes/_authenticated.databases'
@@ -28,6 +29,7 @@ import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated.c
 import { Route as AuthenticatedAuditLogRouteImport } from './routes/_authenticated.audit-log'
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated.approvals'
 import { Route as AuthenticatedTasksIdRouteImport } from './routes/_authenticated.tasks.$id'
+import { Route as AuthenticatedMissionsIdRouteImport } from './routes/_authenticated.missions.$id'
 import { Route as AuthenticatedFilesSplatRouteImport } from './routes/_authenticated.files.$'
 
 const AuthRoute = AuthRouteImport.update({
@@ -79,6 +81,11 @@ const AuthenticatedServersRoute = AuthenticatedServersRouteImport.update({
   path: '/servers',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMissionsRoute = AuthenticatedMissionsRouteImport.update({
+  id: '/missions',
+  path: '/missions',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedIntegrationsRoute =
   AuthenticatedIntegrationsRouteImport.update({
     id: '/integrations',
@@ -126,6 +133,11 @@ const AuthenticatedTasksIdRoute = AuthenticatedTasksIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedTasksRoute,
 } as any)
+const AuthenticatedMissionsIdRoute = AuthenticatedMissionsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedMissionsRoute,
+} as any)
 const AuthenticatedFilesSplatRoute = AuthenticatedFilesSplatRouteImport.update({
   id: '/$',
   path: '/$',
@@ -143,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/databases': typeof AuthenticatedDatabasesRoute
   '/files': typeof AuthenticatedFilesRouteWithChildren
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/missions': typeof AuthenticatedMissionsRouteWithChildren
   '/servers': typeof AuthenticatedServersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/storage': typeof AuthenticatedStorageRoute
@@ -151,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/workspaces': typeof AuthenticatedWorkspacesRoute
   '/api/chat': typeof ApiChatRoute
   '/files/$': typeof AuthenticatedFilesSplatRoute
+  '/missions/$id': typeof AuthenticatedMissionsIdRoute
   '/tasks/$id': typeof AuthenticatedTasksIdRoute
 }
 export interface FileRoutesByTo {
@@ -163,6 +177,7 @@ export interface FileRoutesByTo {
   '/databases': typeof AuthenticatedDatabasesRoute
   '/files': typeof AuthenticatedFilesRouteWithChildren
   '/integrations': typeof AuthenticatedIntegrationsRoute
+  '/missions': typeof AuthenticatedMissionsRouteWithChildren
   '/servers': typeof AuthenticatedServersRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/storage': typeof AuthenticatedStorageRoute
@@ -172,6 +187,7 @@ export interface FileRoutesByTo {
   '/api/chat': typeof ApiChatRoute
   '/': typeof AuthenticatedIndexRoute
   '/files/$': typeof AuthenticatedFilesSplatRoute
+  '/missions/$id': typeof AuthenticatedMissionsIdRoute
   '/tasks/$id': typeof AuthenticatedTasksIdRoute
 }
 export interface FileRoutesById {
@@ -186,6 +202,7 @@ export interface FileRoutesById {
   '/_authenticated/databases': typeof AuthenticatedDatabasesRoute
   '/_authenticated/files': typeof AuthenticatedFilesRouteWithChildren
   '/_authenticated/integrations': typeof AuthenticatedIntegrationsRoute
+  '/_authenticated/missions': typeof AuthenticatedMissionsRouteWithChildren
   '/_authenticated/servers': typeof AuthenticatedServersRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/storage': typeof AuthenticatedStorageRoute
@@ -195,6 +212,7 @@ export interface FileRoutesById {
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/files/$': typeof AuthenticatedFilesSplatRoute
+  '/_authenticated/missions/$id': typeof AuthenticatedMissionsIdRoute
   '/_authenticated/tasks/$id': typeof AuthenticatedTasksIdRoute
 }
 export interface FileRouteTypes {
@@ -210,6 +228,7 @@ export interface FileRouteTypes {
     | '/databases'
     | '/files'
     | '/integrations'
+    | '/missions'
     | '/servers'
     | '/settings'
     | '/storage'
@@ -218,6 +237,7 @@ export interface FileRouteTypes {
     | '/workspaces'
     | '/api/chat'
     | '/files/$'
+    | '/missions/$id'
     | '/tasks/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -230,6 +250,7 @@ export interface FileRouteTypes {
     | '/databases'
     | '/files'
     | '/integrations'
+    | '/missions'
     | '/servers'
     | '/settings'
     | '/storage'
@@ -239,6 +260,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/'
     | '/files/$'
+    | '/missions/$id'
     | '/tasks/$id'
   id:
     | '__root__'
@@ -252,6 +274,7 @@ export interface FileRouteTypes {
     | '/_authenticated/databases'
     | '/_authenticated/files'
     | '/_authenticated/integrations'
+    | '/_authenticated/missions'
     | '/_authenticated/servers'
     | '/_authenticated/settings'
     | '/_authenticated/storage'
@@ -261,6 +284,7 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/_authenticated/'
     | '/_authenticated/files/$'
+    | '/_authenticated/missions/$id'
     | '/_authenticated/tasks/$id'
   fileRoutesById: FileRoutesById
 }
@@ -342,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServersRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/missions': {
+      id: '/_authenticated/missions'
+      path: '/missions'
+      fullPath: '/missions'
+      preLoaderRoute: typeof AuthenticatedMissionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/integrations': {
       id: '/_authenticated/integrations'
       path: '/integrations'
@@ -405,6 +436,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTasksIdRouteImport
       parentRoute: typeof AuthenticatedTasksRoute
     }
+    '/_authenticated/missions/$id': {
+      id: '/_authenticated/missions/$id'
+      path: '/$id'
+      fullPath: '/missions/$id'
+      preLoaderRoute: typeof AuthenticatedMissionsIdRouteImport
+      parentRoute: typeof AuthenticatedMissionsRoute
+    }
     '/_authenticated/files/$': {
       id: '/_authenticated/files/$'
       path: '/$'
@@ -426,6 +464,19 @@ const AuthenticatedFilesRouteChildren: AuthenticatedFilesRouteChildren = {
 const AuthenticatedFilesRouteWithChildren =
   AuthenticatedFilesRoute._addFileChildren(AuthenticatedFilesRouteChildren)
 
+interface AuthenticatedMissionsRouteChildren {
+  AuthenticatedMissionsIdRoute: typeof AuthenticatedMissionsIdRoute
+}
+
+const AuthenticatedMissionsRouteChildren: AuthenticatedMissionsRouteChildren = {
+  AuthenticatedMissionsIdRoute: AuthenticatedMissionsIdRoute,
+}
+
+const AuthenticatedMissionsRouteWithChildren =
+  AuthenticatedMissionsRoute._addFileChildren(
+    AuthenticatedMissionsRouteChildren,
+  )
+
 interface AuthenticatedTasksRouteChildren {
   AuthenticatedTasksIdRoute: typeof AuthenticatedTasksIdRoute
 }
@@ -446,6 +497,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDatabasesRoute: typeof AuthenticatedDatabasesRoute
   AuthenticatedFilesRoute: typeof AuthenticatedFilesRouteWithChildren
   AuthenticatedIntegrationsRoute: typeof AuthenticatedIntegrationsRoute
+  AuthenticatedMissionsRoute: typeof AuthenticatedMissionsRouteWithChildren
   AuthenticatedServersRoute: typeof AuthenticatedServersRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStorageRoute: typeof AuthenticatedStorageRoute
@@ -464,6 +516,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDatabasesRoute: AuthenticatedDatabasesRoute,
   AuthenticatedFilesRoute: AuthenticatedFilesRouteWithChildren,
   AuthenticatedIntegrationsRoute: AuthenticatedIntegrationsRoute,
+  AuthenticatedMissionsRoute: AuthenticatedMissionsRouteWithChildren,
   AuthenticatedServersRoute: AuthenticatedServersRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStorageRoute: AuthenticatedStorageRoute,

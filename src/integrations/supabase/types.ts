@@ -287,6 +287,144 @@ export type Database = {
           },
         ];
       };
+      mission_steps: {
+        Row: {
+          approval_id: string | null;
+          created_at: string;
+          error: string | null;
+          finished_at: string | null;
+          id: string;
+          input_summary: string | null;
+          mission_id: string;
+          output_summary: string | null;
+          payload: Json;
+          planned_action: string | null;
+          status: string;
+          step_number: number;
+          title: string;
+          tool_execution_id: string | null;
+          tool_name: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          approval_id?: string | null;
+          created_at?: string;
+          error?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          input_summary?: string | null;
+          mission_id: string;
+          output_summary?: string | null;
+          payload?: Json;
+          planned_action?: string | null;
+          status?: string;
+          step_number: number;
+          title: string;
+          tool_execution_id?: string | null;
+          tool_name?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          approval_id?: string | null;
+          created_at?: string;
+          error?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          input_summary?: string | null;
+          mission_id?: string;
+          output_summary?: string | null;
+          payload?: Json;
+          planned_action?: string | null;
+          status?: string;
+          step_number?: number;
+          title?: string;
+          tool_execution_id?: string | null;
+          tool_name?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mission_steps_approval_id_fkey";
+            columns: ["approval_id"];
+            isOneToOne: false;
+            referencedRelation: "approvals";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mission_steps_mission_id_fkey";
+            columns: ["mission_id"];
+            isOneToOne: false;
+            referencedRelation: "missions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mission_steps_tool_execution_id_fkey";
+            columns: ["tool_execution_id"];
+            isOneToOne: false;
+            referencedRelation: "tool_executions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      missions: {
+        Row: {
+          created_at: string;
+          error: string | null;
+          final_summary: string | null;
+          finished_at: string | null;
+          goal: string;
+          id: string;
+          model: string | null;
+          permission_level: string;
+          provider: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+          workspace_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          error?: string | null;
+          final_summary?: string | null;
+          finished_at?: string | null;
+          goal: string;
+          id?: string;
+          model?: string | null;
+          permission_level?: string;
+          provider?: string | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+          workspace_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          error?: string | null;
+          final_summary?: string | null;
+          finished_at?: string | null;
+          goal?: string;
+          id?: string;
+          model?: string | null;
+          permission_level?: string;
+          provider?: string | null;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+          workspace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "missions_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           body: string | null;
