@@ -140,7 +140,9 @@ export const smokeTestServer = createServerFn({ method: "POST" })
     if (error || !srv) throw new Error(error?.message ?? "Server not found");
     if (!srv.enabled) throw new Error("Server is disabled. Enable it before running smoke tests.");
     if (srv.adapter_mode !== "remote-agent")
-      throw new Error(`Smoke test requires adapter_mode 'remote-agent' (got '${srv.adapter_mode}').`);
+      throw new Error(
+        `Smoke test requires adapter_mode 'remote-agent' (got '${srv.adapter_mode}').`,
+      );
     if (!srv.daemon_url || !srv.daemon_token)
       throw new Error("Server is missing daemon URL or token.");
 

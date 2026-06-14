@@ -261,7 +261,9 @@ function ServersPage() {
                 </button>
                 <button
                   disabled={smoke.isPending || !ready}
-                  title={ready ? "Run pwd / ls / node --version" : "Enable and set remote-agent first"}
+                  title={
+                    ready ? "Run pwd / ls / node --version" : "Enable and set remote-agent first"
+                  }
                   onClick={() => smoke.mutate(s.id)}
                   className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-[12.5px] disabled:opacity-40"
                 >
@@ -313,7 +315,9 @@ function SetupHint() {
               <code className="font-mono">WORKSPACE_ROOT</code> set.
             </li>
             <li>Put it behind HTTPS (the URL the app will call).</li>
-            <li>Add the server below, then run <em>Test connection</em> and <em>Smoke test</em>.</li>
+            <li>
+              Add the server below, then run <em>Test connection</em> and <em>Smoke test</em>.
+            </li>
           </ol>
           <div className="text-[11px]">
             Tokens and URLs stay server-side. Dangerous commands still require approval.
