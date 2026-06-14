@@ -8,6 +8,7 @@ import { buildPlannerSystemPrompt, buildPlannerUserPrompt } from "./prompts.serv
 import { PERMISSION_TIERS, TOOL_REGISTRY, type PermissionLevel } from "@/lib/tools/registry";
 import type { ToolName } from "@/lib/tools/risk";
 import { executeTool, type AdapterMode } from "@/lib/tools/executor.server";
+import { isBrowserAgentEnabled } from "@/lib/tools/browser-agent.server";
 
 interface MissionRow {
   id: string;
