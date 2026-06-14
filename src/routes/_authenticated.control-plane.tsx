@@ -34,7 +34,10 @@ function ControlPlanePage() {
   const servers = useQuery({ queryKey: ["servers"], queryFn: useServerFn(listServers) });
   const databases = useQuery({ queryKey: ["databases"], queryFn: useServerFn(listDatabases) });
   const storage = useQuery({ queryKey: ["storage"], queryFn: useServerFn(listStorage) });
-  const integrations = useQuery({ queryKey: ["integrations"], queryFn: useServerFn(listIntegrations) });
+  const integrations = useQuery({
+    queryKey: ["integrations"],
+    queryFn: useServerFn(listIntegrations),
+  });
   const workspaces = useQuery({ queryKey: ["workspaces"], queryFn: useServerFn(listWorkspaces) });
   const approvalsFn = useServerFn(listApprovals);
   const approvals = useQuery({
@@ -112,20 +115,24 @@ function ControlPlanePage() {
   return (
     <AppShell>
       <div className="flex items-center gap-2">
-        <Link to="/settings" className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60 text-muted-foreground">
+        <Link
+          to="/settings"
+          className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60 text-muted-foreground"
+        >
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div>
           <h1 className="text-[22px] font-semibold tracking-tight leading-tight">Control Plane</h1>
           <p className="text-[12px] text-muted-foreground">
-            Manage providers, servers, workspaces, databases, storage, integrations, approvals, and audit.
+            Manage providers, servers, workspaces, databases, storage, integrations, approvals, and
+            audit.
           </p>
         </div>
       </div>
 
       <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-[12px] text-amber-300">
-        M4B — full per-section CRUD with validation stubs. Dry-run/mock remains the default execution
-        mode. Real DB/storage TCP probes ship with M5 remote-agent execution.
+        M4B — full per-section CRUD with validation stubs. Dry-run/mock remains the default
+        execution mode. Real DB/storage TCP probes ship with M5 remote-agent execution.
       </div>
 
       <div className="mt-3 space-y-2.5">

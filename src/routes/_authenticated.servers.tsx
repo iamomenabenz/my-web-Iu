@@ -9,14 +9,7 @@ import {
   deleteServer,
   healthCheckServer,
 } from "@/lib/servers.functions";
-import {
-  ChevronLeft,
-  Server as ServerIcon,
-  Activity,
-  Trash2,
-  Plus,
-  Loader2,
-} from "lucide-react";
+import { ChevronLeft, Server as ServerIcon, Activity, Trash2, Plus, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/servers")({
   head: () => ({ meta: [{ title: "Servers — Omena Codex" }] }),
@@ -77,7 +70,10 @@ function ServersPage() {
   return (
     <AppShell>
       <div className="flex items-center gap-2">
-        <Link to="/settings" className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60 text-muted-foreground">
+        <Link
+          to="/settings"
+          className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60 text-muted-foreground"
+        >
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="flex-1">
@@ -156,7 +152,12 @@ function ServersPage() {
                 onClick={() => health.mutate(s.id)}
                 className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-secondary/60 border border-border/60 px-3 py-1.5 text-[12.5px] disabled:opacity-50"
               >
-                {health.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Activity className="h-3.5 w-3.5" />} Ping
+                {health.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Activity className="h-3.5 w-3.5" />
+                )}{" "}
+                Ping
               </button>
               <button
                 disabled={del.isPending}
@@ -198,18 +199,38 @@ function ServerForm({
   const [token, setToken] = useState("");
   const [root, setRoot] = useState("");
   const [enabled, setEnabled] = useState(false);
-  const [mode, setMode] = useState<"mock" | "dry-run" | "remote-agent" | "ssh" | "self-hosted-local">("remote-agent");
+  const [mode, setMode] = useState<
+    "mock" | "dry-run" | "remote-agent" | "ssh" | "self-hosted-local"
+  >("remote-agent");
 
   return (
     <div className="mt-4 rounded-2xl border border-border/70 bg-card/70 p-3.5 space-y-2.5">
       <Input label="Name" value={name} onChange={setName} placeholder="prod-1" />
       <Input label="Host" value={host} onChange={setHost} placeholder="prod-1.example.com" />
-      <Input label="Daemon URL" value={url} onChange={setUrl} placeholder="https://agent.example.com" />
-      <Input label="Daemon token" value={token} onChange={setToken} placeholder="secret" type="password" />
-      <Input label="Workspace root" value={root} onChange={setRoot} placeholder="/var/workspaces/app" />
+      <Input
+        label="Daemon URL"
+        value={url}
+        onChange={setUrl}
+        placeholder="https://agent.example.com"
+      />
+      <Input
+        label="Daemon token"
+        value={token}
+        onChange={setToken}
+        placeholder="secret"
+        type="password"
+      />
+      <Input
+        label="Workspace root"
+        value={root}
+        onChange={setRoot}
+        placeholder="/var/workspaces/app"
+      />
 
       <div>
-        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">Adapter</label>
+        <label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          Adapter
+        </label>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value as typeof mode)}

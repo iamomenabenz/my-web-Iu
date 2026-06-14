@@ -40,7 +40,9 @@ export const resolveApproval = createServerFn({ method: "POST" })
     // Load the approval first so we know what to execute on approve.
     const { data: row, error: loadErr } = await supabase
       .from("approvals")
-      .select("id, status, tool_name, action, payload, workspace_id, conversation_id, requested_by")
+      .select(
+        "id, status, tool_name, action, risk_level, input_summary, payload, workspace_id, conversation_id, requested_by",
+      )
       .eq("id", data.id)
       .single();
     if (loadErr || !row) throw new Error(loadErr?.message ?? "Approval not found");
@@ -79,7 +81,23 @@ export const resolveApproval = createServerFn({ method: "POST" })
       link: "/approvals",
     });
 
-    if (data.decision !== "approved") return { ok: true };
+    if (data.decision !== "approved") {
+      await supabaseAdmin.from("tool_executions").insert({
+        approval_id: row.id,
+        conversation_id: row.conversation_id,
+        workspace_id: row.workspace_id ?? null,
+        user_id: row.requested_by,
+        tool_name: row.tool_name ?? row.action,
+        risk_level: row.risk_level ?? "restricted",
+        adapter_mode: "mock",
+        status: "rejected",
+        input_summary: row.input_summary,
+        payload: (row.payload ?? {}) as never,
+        error: "Approval rejected; tool was not executed.",
+        finished_at: new Date().toISOString(),
+      });
+      return { ok: true };
+    }
 
     // Resolve adapter mode for execution.
     let adapterMode: AdapterMode = "mock";
@@ -111,7 +129,30 @@ export const resolveApproval = createServerFn({ method: "POST" })
         workspaceId: row.workspace_id,
         adapterMode,
       },
+      { approvalId: row.id },
     );
+
+    if (row.conversation_id) {
+      await supabaseAdmin.from("messages").insert({
+        conversation_id: row.conversation_id,
+        role: "tool",
+        parts: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              approvalId: row.id,
+              tool: row.tool_name ?? row.action,
+              ok: result.ok,
+              mode: result.mode,
+              risk: result.risk,
+              summary: result.summary,
+              note: result.note ?? null,
+              data: result.data ?? null,
+            }),
+          },
+        ] as never,
+      });
+    }
 
     return {
       ok: true,

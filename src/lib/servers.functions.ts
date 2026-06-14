@@ -7,7 +7,10 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 const SAFE_SERVER_COLS =
   "id, name, host, status, last_seen_at, workspace_root, enabled, adapter_mode, last_health_at, created_by, created_at, updated_at";
 
-async function assertAdmin(supabase: import("@supabase/supabase-js").SupabaseClient, userId: string) {
+async function assertAdmin(
+  supabase: import("@supabase/supabase-js").SupabaseClient,
+  userId: string,
+) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Forbidden");
@@ -32,7 +35,9 @@ const upsertSchema = z.object({
   daemon_token: z.string().min(8).max(4096),
   workspace_root: z.string().max(1024).optional().nullable(),
   enabled: z.boolean().default(false),
-  adapter_mode: z.enum(["mock", "dry-run", "remote-agent", "ssh", "self-hosted-local"]).default("mock"),
+  adapter_mode: z
+    .enum(["mock", "dry-run", "remote-agent", "ssh", "self-hosted-local"])
+    .default("mock"),
 });
 
 export const upsertServer = createServerFn({ method: "POST" })
@@ -56,7 +61,11 @@ export const upsertServer = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
-    const { data: ins, error } = await supabaseAdmin.from("servers").insert(row).select("id").single();
+    const { data: ins, error } = await supabaseAdmin
+      .from("servers")
+      .insert(row)
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return { id: ins.id };
   });
@@ -98,5 +107,11 @@ export const healthCheckServer = createServerFn({ method: "POST" })
         last_seen_at: res.ok ? new Date().toISOString() : undefined,
       })
       .eq("id", data.id);
+    await supabaseAdmin.from("audit_log").insert({
+      actor: context.userId,
+      action: "server.health_check",
+      target: data.id,
+      payload: { ok: res.ok, status, http_status: res.status, error: res.error ?? null } as never,
+    });
     return { ok: res.ok, status, error: res.error, data: res.data };
   });

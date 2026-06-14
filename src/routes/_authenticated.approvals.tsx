@@ -2,19 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/layout/AppShell";
-import {
-  listApprovals,
-  resolveApproval,
-} from "@/lib/approvals.functions";
-import {
-  ShieldCheck,
-  ShieldAlert,
-  ShieldX,
-  Check,
-  X,
-  Clock,
-  ChevronLeft,
-} from "lucide-react";
+import { listApprovals, resolveApproval } from "@/lib/approvals.functions";
+import { ShieldCheck, ShieldAlert, ShieldX, Check, X, Clock, ChevronLeft } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/approvals")({
@@ -76,9 +65,7 @@ function ApprovalsPage() {
       </div>
 
       <div className="mt-3 space-y-2.5">
-        {isLoading && (
-          <div className="text-[12.5px] text-muted-foreground px-1">Loading…</div>
-        )}
+        {isLoading && <div className="text-[12.5px] text-muted-foreground px-1">Loading…</div>}
         {!isLoading && approvals.length === 0 && (
           <div className="rounded-2xl border border-border/70 bg-card/40 px-4 py-6 text-center">
             <ShieldCheck className="mx-auto h-6 w-6 text-muted-foreground" />
@@ -121,7 +108,8 @@ function ApprovalCard({
   pending: boolean;
 }) {
   const risk = approval.risk_level;
-  const RiskIcon = risk === "dangerous" ? ShieldX : risk === "restricted" ? ShieldAlert : ShieldCheck;
+  const RiskIcon =
+    risk === "dangerous" ? ShieldX : risk === "restricted" ? ShieldAlert : ShieldCheck;
   const riskColor =
     risk === "dangerous"
       ? "text-destructive border-destructive/40 bg-destructive/10"
@@ -140,7 +128,9 @@ function ApprovalCard({
   return (
     <div className="rounded-2xl border border-border/70 bg-card/70 p-3.5">
       <div className="flex items-start gap-2">
-        <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${riskColor}`}>
+        <span
+          className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${riskColor}`}
+        >
           <RiskIcon className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -148,10 +138,14 @@ function ApprovalCard({
             <span className="font-mono text-[12px] text-foreground">
               {approval.tool_name ?? approval.action}
             </span>
-            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${riskColor}`}>
+            <span
+              className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${riskColor}`}
+            >
               {risk}
             </span>
-            <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${statusBadge}`}>
+            <span
+              className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${statusBadge}`}
+            >
               {approval.status}
             </span>
           </div>

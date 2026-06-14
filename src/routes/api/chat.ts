@@ -3,13 +3,7 @@
 // M3: tool execution flows through src/lib/tools/executor.server.ts which
 // classifies risk and queues approvals for restricted/dangerous actions.
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  convertToModelMessages,
-  streamText,
-  stepCountIs,
-  tool,
-  type UIMessage,
-} from "ai";
+import { convertToModelMessages, streamText, stepCountIs, tool, type UIMessage } from "ai";
 import { z } from "zod";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
@@ -22,7 +16,7 @@ You collaborate by showing your full workflow — not just final answers. When g
 2. Use tools to act: \`run_command\` for shell, \`read_file\` / \`write_file\` for the workspace, \`web_search\` for external lookups.
 3. After tools return, summarize what changed and what is next.
 
-Tools that mutate the workspace (run_command, write_file) and tools that touch sensitive paths are RESTRICTED or DANGEROUS — they return { pending: true, approvalId } and pause until the user approves them from the Approvals tab. Do not retry the same call repeatedly; explain what is pending and continue with safe work.
+Tools that mutate the workspace (run_command, write_file, delete_file) and tools that touch sensitive paths are RESTRICTED or DANGEROUS — they return { pending: true, approvalId } and pause until the user approves them from the Approvals tab. Do not retry the same call repeatedly; explain what is pending and continue with safe work.
 
 Be concise. Use markdown. Render commands in code blocks. Never invent file contents — read first, then edit.`;
 
@@ -54,6 +48,7 @@ function buildTools(ctx: {
         command: z.string().min(1).max(2000),
         cwd: z.string().optional(),
         reason: z.string().describe("Why this command is needed."),
+        timeoutMs: z.number().int().min(1000).max(300000).optional(),
       }),
       execute: async (input) => executeTool("run_command", input, ctx),
     }),
@@ -70,6 +65,44 @@ function buildTools(ctx: {
         reason: z.string(),
       }),
       execute: async (input) => executeTool("write_file", input, ctx),
+    }),
+    delete_file: tool({
+      description: "Delete a workspace file. Requires approval.",
+      inputSchema: z.object({
+        path: z.string().min(1).max(1024),
+        reason: z.string(),
+      }),
+      execute: async (input) => executeTool("delete_file", input, ctx),
+    }),
+    list_files: tool({
+      description: "List files in a workspace directory through the linked server-agent.",
+      inputSchema: z.object({
+        path: z.string().max(1024).optional(),
+        limit: z.number().int().min(1).max(500).optional(),
+      }),
+      execute: async (input) => executeTool("list_files", input, ctx),
+    }),
+    search_files: tool({
+      description: "Search workspace files through the linked server-agent.",
+      inputSchema: z.object({
+        query: z.string().min(1).max(200),
+        path: z.string().max(1024).optional(),
+        limit: z.number().int().min(1).max(500).optional(),
+      }),
+      execute: async (input) => executeTool("search_files", input, ctx),
+    }),
+    get_workspace_info: tool({
+      description: "Get active workspace information from the linked server-agent.",
+      inputSchema: z.object({}),
+      execute: async (input) => executeTool("get_workspace_info", input, ctx),
+    }),
+    get_logs: tool({
+      description: "Get recent command logs from the linked server-agent.",
+      inputSchema: z.object({
+        commandId: z.string().optional(),
+        limit: z.number().int().min(1).max(500).optional(),
+      }),
+      execute: async (input) => executeTool("get_logs", input, ctx),
     }),
   };
 }
@@ -102,7 +135,14 @@ export const Route = createFileRoute("/api/chat")({
         const body = (await request.json()) as ReqBody;
         const messages = Array.isArray(body.messages) ? body.messages : [];
         const model = body.model || "google/gemini-3-flash-preview";
-        const workspaceId = body.workspaceId ?? null;
+        const requestedWorkspaceId = body.workspaceId ?? null;
+        const workspaceId =
+          requestedWorkspaceId &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            requestedWorkspaceId,
+          )
+            ? requestedWorkspaceId
+            : null;
 
         // Resolve adapter mode from workspace → server, default mock.
         let adapterMode: AdapterMode = "mock";
@@ -112,7 +152,8 @@ export const Route = createFileRoute("/api/chat")({
             .select("server_id, servers:server_id(adapter_mode, enabled)")
             .eq("id", workspaceId)
             .maybeSingle();
-          const srv = (ws as { servers?: { adapter_mode?: string; enabled?: boolean } } | null)?.servers;
+          const srv = (ws as { servers?: { adapter_mode?: string; enabled?: boolean } } | null)
+            ?.servers;
           if (srv?.enabled && srv?.adapter_mode) {
             adapterMode = srv.adapter_mode as AdapterMode;
           }

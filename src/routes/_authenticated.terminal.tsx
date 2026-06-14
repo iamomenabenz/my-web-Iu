@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTerminalLogs, getTasks } from "@/lib/api";
+import { useServerFn } from "@tanstack/react-start";
+import { runTerminalCommand, listTerminalExecutions } from "@/lib/terminal.functions";
+import { useApp } from "@/lib/store";
 import { openLogStream, type StreamState } from "@/lib/stream";
 import type { TerminalLine } from "@/lib/mock-data";
 import { AppShell } from "@/components/layout/AppShell";
@@ -20,10 +23,16 @@ export const Route = createFileRoute("/_authenticated/terminal")({
 
 function TerminalPage() {
   const { data: seed = [] } = useQuery({ queryKey: ["term-seed"], queryFn: getTerminalLogs });
+  const runCommand = useServerFn(runTerminalCommand);
+  const listExecutions = useServerFn(listTerminalExecutions);
+  const qc = useQueryClient();
+  const { workspaceId } = useApp();
+  const workspaceUuid = /^[0-9a-f-]{36}$/i.test(workspaceId) ? workspaceId : null;
   const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: getTasks });
   const [lines, setLines] = useState<TerminalLine[]>([]);
   const [taskId, setTaskId] = useState<string>("main");
   const [streamState, setStreamState] = useState<StreamState>("connecting");
+  const [command, setCommand] = useState("");
   const scrollRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
@@ -39,6 +48,29 @@ function TerminalPage() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [lines]);
+
+  const history = useQuery({
+    queryKey: ["terminal-executions", workspaceUuid],
+    queryFn: () => listExecutions({ data: { workspaceId: workspaceUuid } }),
+    refetchInterval: 5000,
+  });
+  const submit = useMutation({
+    mutationFn: (cmd: string) =>
+      runCommand({ data: { command: cmd, workspaceId: workspaceUuid, timeoutMs: 60000 } }),
+    onSuccess: (res) => {
+      setLines((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          stream: res.ok ? "stdout" : "system",
+          text: res.note ?? res.summary,
+          ts: new Date().toISOString(),
+        },
+      ]);
+      setCommand("");
+      qc.invalidateQueries({ queryKey: ["terminal-executions"] });
+    },
+  });
 
   const currentTask = tasks.find((t) => t.id === taskId);
 
@@ -102,8 +134,44 @@ function TerminalPage() {
               {l.text || "\u00a0"}
             </span>
           ))}
+          {(history.data?.executions ?? []).slice(0, 8).map((x) => (
+            <span
+              key={x.id}
+              className={`block ${x.status === "error" ? "text-destructive" : "text-muted-foreground"}`}
+            >
+              [{x.status}] {x.input_summary ?? "command"}
+            </span>
+          ))}
           <span className="inline-block w-2 h-3.5 bg-primary animate-pulse align-middle" />
         </pre>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const value = command.trim();
+            if (value) submit.mutate(value);
+          }}
+          className="border-t border-border bg-background/60 px-3 py-2"
+        >
+          <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-card/70 px-2 py-1.5">
+            <span className="font-mono text-[12px] text-primary">$</span>
+            <input
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              placeholder="Run command via remote-agent approval flow…"
+              className="min-w-0 flex-1 bg-transparent font-mono text-[12px] outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              disabled={submit.isPending}
+              className="rounded-md border border-primary/30 bg-primary/15 px-2 py-1 text-[11px] text-primary disabled:opacity-50"
+            >
+              Run
+            </button>
+          </div>
+          <p className="mt-1 text-[10.5px] text-muted-foreground">
+            Commands never run in Lovable Cloud. Restricted commands create approvals first.
+          </p>
+        </form>
       </div>
     </AppShell>
   );

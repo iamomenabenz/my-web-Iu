@@ -73,9 +73,15 @@ export const upsertDatabase = createServerFn({ method: "POST" })
     };
     if (data.connection_url) row.connection_url = data.connection_url;
     if (data.id) {
-      const { error } = await supabaseAdmin.from("database_connections").update(row as never).eq("id", data.id);
+      const { error } = await supabaseAdmin
+        .from("database_connections")
+        .update(row as never)
+        .eq("id", data.id);
       if (error) throw new Error(error.message);
-      await audit(context.userId, "database.update", data.id, { name: data.name, enabled: data.enabled });
+      await audit(context.userId, "database.update", data.id, {
+        name: data.name,
+        enabled: data.enabled,
+      });
       return { id: data.id };
     }
     const { data: ins, error } = await supabaseAdmin
@@ -84,7 +90,10 @@ export const upsertDatabase = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    await audit(context.userId, "database.create", ins.id, { name: data.name, db_type: data.db_type });
+    await audit(context.userId, "database.create", ins.id, {
+      name: data.name,
+      db_type: data.db_type,
+    });
     return { id: ins.id };
   });
 
@@ -186,12 +195,22 @@ export const upsertStorage = createServerFn({ method: "POST" })
     if (data.secret_access_key) row.secret_access_key = data.secret_access_key;
     if (data.is_default) {
       // ensure only one default
-      await supabaseAdmin.from("storage_backends").update({ is_default: false } as never).neq("id", data.id ?? "00000000-0000-0000-0000-000000000000");
+      await supabaseAdmin
+        .from("storage_backends")
+        .update({ is_default: false } as never)
+        .neq("id", data.id ?? "00000000-0000-0000-0000-000000000000");
     }
     if (data.id) {
-      const { error } = await supabaseAdmin.from("storage_backends").update(row as never).eq("id", data.id);
+      const { error } = await supabaseAdmin
+        .from("storage_backends")
+        .update(row as never)
+        .eq("id", data.id);
       if (error) throw new Error(error.message);
-      await audit(context.userId, "storage.update", data.id, { name: data.name, enabled: data.enabled, is_default: data.is_default });
+      await audit(context.userId, "storage.update", data.id, {
+        name: data.name,
+        enabled: data.enabled,
+        is_default: data.is_default,
+      });
       return { id: data.id };
     }
     const { data: ins, error } = await supabaseAdmin
@@ -200,7 +219,10 @@ export const upsertStorage = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    await audit(context.userId, "storage.create", ins.id, { name: data.name, provider_type: data.provider_type });
+    await audit(context.userId, "storage.create", ins.id, {
+      name: data.name,
+      provider_type: data.provider_type,
+    });
     return { id: ins.id };
   });
 
@@ -210,8 +232,14 @@ export const setDefaultStorage = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("storage_backends").update({ is_default: false } as never).neq("id", data.id);
-    const { error } = await supabaseAdmin.from("storage_backends").update({ is_default: true } as never).eq("id", data.id);
+    await supabaseAdmin
+      .from("storage_backends")
+      .update({ is_default: false } as never)
+      .neq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("storage_backends")
+      .update({ is_default: true } as never)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     await audit(context.userId, "storage.set_default", data.id, {});
     return { ok: true };
@@ -308,9 +336,16 @@ export const upsertIntegration = createServerFn({ method: "POST" })
     };
     if (data.auth_token) row.auth_token = data.auth_token;
     if (data.id) {
-      const { error } = await supabaseAdmin.from("api_integrations").update(row as never).eq("id", data.id);
+      const { error } = await supabaseAdmin
+        .from("api_integrations")
+        .update(row as never)
+        .eq("id", data.id);
       if (error) throw new Error(error.message);
-      await audit(context.userId, "integration.update", data.id, { name: data.name, enabled: data.enabled, allow_agent_use: data.allow_agent_use });
+      await audit(context.userId, "integration.update", data.id, {
+        name: data.name,
+        enabled: data.enabled,
+        allow_agent_use: data.allow_agent_use,
+      });
       return { id: data.id };
     }
     const { data: ins, error } = await supabaseAdmin
@@ -319,7 +354,10 @@ export const upsertIntegration = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    await audit(context.userId, "integration.create", ins.id, { name: data.name, base_url: data.base_url });
+    await audit(context.userId, "integration.create", ins.id, {
+      name: data.name,
+      base_url: data.base_url,
+    });
     return { id: ins.id };
   });
 
@@ -395,7 +433,13 @@ const wsSchema = z.object({
   repo_url: z.string().max(1024).optional().nullable(),
   file_access_policy: z.enum(["view-only", "safe", "restricted", "full"]).default("restricted"),
   command_permission_level: z
-    .enum(["view-only", "safe", "restricted-with-approval", "dangerous-blocked", "dangerous-with-approval"])
+    .enum([
+      "view-only",
+      "safe",
+      "restricted-with-approval",
+      "dangerous-blocked",
+      "dangerous-with-approval",
+    ])
     .default("restricted-with-approval"),
   active_provider_id: z.string().uuid().nullable().optional(),
   active_storage_id: z.string().uuid().nullable().optional(),
@@ -436,7 +480,10 @@ export const upsertWorkspace = createServerFn({ method: "POST" })
       created_by: context.userId,
     };
     if (data.id) {
-      const { error } = await supabaseAdmin.from("workspaces").update(row as never).eq("id", data.id);
+      const { error } = await supabaseAdmin
+        .from("workspaces")
+        .update(row as never)
+        .eq("id", data.id);
       if (error) throw new Error(error.message);
       await audit(context.userId, "workspace.update", data.id, {
         name: data.name,

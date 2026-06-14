@@ -10,7 +10,15 @@ import {
   testDatabase,
 } from "@/lib/control-plane.functions";
 import { ChevronLeft, Database, Trash2, Plus, Activity, Pencil } from "lucide-react";
-import { Field, TextInput, Select, Toggle, StatusBadge, Card, FormShell } from "@/components/control-plane/Form";
+import {
+  Field,
+  TextInput,
+  Select,
+  Toggle,
+  StatusBadge,
+  Card,
+  FormShell,
+} from "@/components/control-plane/Form";
 
 export const Route = createFileRoute("/_authenticated/databases")({
   head: () => ({ meta: [{ title: "Databases — Omena Codex" }] }),
@@ -65,7 +73,11 @@ function DatabasesPage() {
 
   return (
     <AppShell>
-      <Header title="Databases" hint="Postgres / Neon / RDS / MySQL. Connection URLs stay server-side." onAdd={() => setEditing({})} />
+      <Header
+        title="Databases"
+        hint="Postgres / Neon / RDS / MySQL. Connection URLs stay server-side."
+        onAdd={() => setEditing({})}
+      />
 
       {editing && (
         <DbForm
@@ -79,7 +91,9 @@ function DatabasesPage() {
 
       <div className="mt-3 space-y-2.5">
         {isLoading && <Loading />}
-        {!isLoading && items.length === 0 && !editing && <Empty icon={Database} text="No databases configured." />}
+        {!isLoading && items.length === 0 && !editing && (
+          <Empty icon={Database} text="No databases configured." />
+        )}
         {items.map((d) => (
           <Card key={d.id}>
             <div className="flex items-start gap-2">
@@ -99,7 +113,9 @@ function DatabasesPage() {
                   </div>
                 )}
                 {d.last_validation_error && (
-                  <div className="mt-0.5 text-[11px] text-amber-400/90 truncate">{d.last_validation_error}</div>
+                  <div className="mt-0.5 text-[11px] text-amber-400/90 truncate">
+                    {d.last_validation_error}
+                  </div>
                 )}
               </div>
             </div>
@@ -158,7 +174,9 @@ function DbForm({
         })
       }
     >
-      <Field label="Name"><TextInput value={name} onChange={setName} placeholder="primary-db" mono={false} /></Field>
+      <Field label="Name">
+        <TextInput value={name} onChange={setName} placeholder="primary-db" mono={false} />
+      </Field>
       <Field label="Type">
         <Select
           value={dbType}
@@ -175,11 +193,18 @@ function DbForm({
       </Field>
       <Field
         label="Connection URL"
-        hint={initial.id ? "Leave blank to keep existing URL. Write-only — never returned to the client." : "postgres://user:pass@host:5432/db (write-only)"}
+        hint={
+          initial.id
+            ? "Leave blank to keep existing URL. Write-only — never returned to the client."
+            : "postgres://user:pass@host:5432/db (write-only)"
+        }
       >
         <TextInput value={url} onChange={setUrl} placeholder="postgres://…" type="password" />
       </Field>
-      <Field label="Or env secret ref" hint="Name of env var on the server. Used if no URL is provided.">
+      <Field
+        label="Or env secret ref"
+        hint="Name of env var on the server. Used if no URL is provided."
+      >
         <TextInput value={secretRef} onChange={setSecretRef} placeholder="DATABASE_URL" />
       </Field>
       <Toggle checked={enabled} onChange={setEnabled} label="Enabled" />
@@ -188,10 +213,21 @@ function DbForm({
 }
 
 /* shared bits */
-export function Header({ title, hint, onAdd }: { title: string; hint: string; onAdd?: () => void }) {
+export function Header({
+  title,
+  hint,
+  onAdd,
+}: {
+  title: string;
+  hint: string;
+  onAdd?: () => void;
+}) {
   return (
     <div className="flex items-center gap-2">
-      <Link to="/control-plane" className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60 text-muted-foreground">
+      <Link
+        to="/control-plane"
+        className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60 text-muted-foreground"
+      >
         <ChevronLeft className="h-4 w-4" />
       </Link>
       <div className="flex-1 min-w-0">
@@ -210,19 +246,33 @@ export function Header({ title, hint, onAdd }: { title: string; hint: string; on
   );
 }
 
-export function Pill({ children, tone }: { children: React.ReactNode; tone?: "warn" | "ok" | "info" }) {
+export function Pill({
+  children,
+  tone,
+}: {
+  children: React.ReactNode;
+  tone?: "warn" | "ok" | "info";
+}) {
   const cls =
     tone === "warn"
       ? "border-amber-500/30 text-amber-400 bg-amber-500/10"
       : tone === "ok"
-      ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
-      : "border-border/60 text-muted-foreground";
+        ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+        : "border-border/60 text-muted-foreground";
   return (
-    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${cls}`}>{children}</span>
+    <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${cls}`}>
+      {children}
+    </span>
   );
 }
 
-export function Empty({ icon: Icon, text }: { icon: React.ComponentType<{ className?: string }>; text: string }) {
+export function Empty({
+  icon: Icon,
+  text,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  text: string;
+}) {
   return (
     <div className="rounded-2xl border border-border/70 bg-card/40 px-4 py-6 text-center">
       <Icon className="mx-auto h-6 w-6 text-muted-foreground" />
