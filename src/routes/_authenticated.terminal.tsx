@@ -57,13 +57,14 @@ function TerminalPage() {
   const submit = useMutation({
     mutationFn: (cmd: string) =>
       runCommand({ data: { command: cmd, workspaceId: workspaceUuid, timeoutMs: 60000 } }),
-    onSuccess: (res) => {
+    onSuccess: (raw) => {
+      const res = raw as { ok?: boolean; note?: string | null; summary?: string };
       setLines((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           stream: res.ok ? "stdout" : "system",
-          text: res.note ?? res.summary,
+          text: res.note ?? res.summary ?? "Command queued.",
           ts: new Date().toISOString(),
         },
       ]);

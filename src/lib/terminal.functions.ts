@@ -43,7 +43,17 @@ export const runTerminalCommand = createServerFn({ method: "POST" })
       workspaceId: data.workspaceId,
       adapterMode,
     });
-    return result;
+    return {
+      ok: result.ok,
+      pending: result.pending ?? false,
+      approvalId: result.approvalId ?? null,
+      executionId: result.executionId ?? null,
+      mode: result.mode,
+      risk: result.risk,
+      summary: result.summary,
+      note: result.note ?? null,
+      dataJson: result.data === undefined ? null : JSON.stringify(result.data),
+    };
   });
 
 export const listTerminalExecutions = createServerFn({ method: "POST" })
