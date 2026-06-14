@@ -12,7 +12,13 @@ export type ToolName =
   | "search_files"
   | "get_workspace_info"
   | "get_logs"
-  | "run_command";
+  | "run_command"
+  // M9 browser-agent tools — disabled until BROWSER_AGENT_URL/TOKEN configured.
+  | "browser_navigate"
+  | "browser_extract"
+  | "browser_click"
+  | "browser_fill"
+  | "browser_screenshot";
 
 const DANGEROUS_PATH_PATTERNS = [
   /(^|\/)\.ssh(\/|$)/i,
@@ -43,6 +49,18 @@ const RESTRICTED_COMMAND_PATTERNS = [
   /\b(make|cargo|go)\s+/i,
   /\b(docker|kubectl|terraform)\b/i,
   /\bmv\b|\bcp\b|\btouch\b|\bmkdir\b/i,
+];
+
+// Browser URL schemes that are never allowed.
+const DANGEROUS_URL_PATTERNS = [/^javascript:/i, /^file:/i, /^data:/i, /^chrome:/i, /^about:/i];
+
+// Selectors that hint at credential fields → escalate to dangerous.
+const DANGEROUS_SELECTOR_PATTERNS = [
+  /password/i,
+  /\[type\s*=\s*['"]?password/i,
+  /credit[-_ ]?card/i,
+  /cvv|cvc/i,
+  /ssn|social[-_ ]?security/i,
 ];
 
 export interface RiskInput {
@@ -96,6 +114,31 @@ export function classifyRisk({ tool, input }: RiskInput): {
     return { risk: "restricted", reason: "Shell command — requires approval by default." };
   }
 
+  if (tool === "browser_navigate") {
+    const url = String(input.url ?? "");
+    if (DANGEROUS_URL_PATTERNS.some((r) => r.test(url)))
+      return { risk: "dangerous", reason: `Disallowed URL scheme (${url.slice(0, 40)}).` };
+    return { risk: "restricted", reason: "Opens a remote URL in a headless browser." };
+  }
+
+  if (tool === "browser_extract" || tool === "browser_screenshot") {
+    return { risk: "restricted", reason: "Reads content from a live browser session." };
+  }
+
+  if (tool === "browser_click") {
+    const sel = String(input.selector ?? "");
+    if (DANGEROUS_SELECTOR_PATTERNS.some((r) => r.test(sel)))
+      return { risk: "dangerous", reason: `Clicks a sensitive control (${sel.slice(0, 60)}).` };
+    return { risk: "restricted", reason: "Clicks an element on the page." };
+  }
+
+  if (tool === "browser_fill") {
+    const sel = String(input.selector ?? "");
+    if (DANGEROUS_SELECTOR_PATTERNS.some((r) => r.test(sel)))
+      return { risk: "dangerous", reason: `Fills a sensitive input (${sel.slice(0, 60)}).` };
+    return { risk: "restricted", reason: "Types into an input on the page." };
+  }
+
   return { risk: "restricted", reason: "Unknown tool, default to restricted." };
 }
 
@@ -121,6 +164,16 @@ export function summarizeInput(tool: ToolName, input: Record<string, unknown>): 
     }
     case "run_command":
       return String(input.command ?? "").slice(0, 200);
+    case "browser_navigate":
+      return String(input.url ?? "").slice(0, 200);
+    case "browser_extract":
+      return `extract ${String(input.selector ?? "body").slice(0, 80)}`;
+    case "browser_click":
+      return `click ${String(input.selector ?? "").slice(0, 80)}`;
+    case "browser_fill":
+      return `fill ${String(input.selector ?? "").slice(0, 60)}`;
+    case "browser_screenshot":
+      return String(input.url ?? "current page").slice(0, 200);
     default:
       return JSON.stringify(input).slice(0, 200);
   }
