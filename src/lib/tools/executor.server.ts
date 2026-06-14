@@ -6,6 +6,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classifyRisk, summarizeInput, type ToolName } from "./risk";
+import { isBrowserTool } from "./registry";
 import {
   daemonDeleteFile,
   daemonExec,
@@ -18,6 +19,14 @@ import {
   resolveDaemonConfig,
   type DaemonConfig,
 } from "./remote-agent.server";
+import {
+  browserClick,
+  browserExtract,
+  browserFill,
+  browserNavigate,
+  browserScreenshot,
+  resolveBrowserAgentConfig,
+} from "./browser-agent.server";
 
 export type AdapterMode = "mock" | "dry-run" | "remote-agent" | "ssh" | "self-hosted-local";
 
