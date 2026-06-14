@@ -154,78 +154,266 @@ function ServersPage() {
         />
       )}
 
+      <SetupHint />
+
       <div className="mt-3 space-y-2.5">
         {isLoading && <div className="text-[12.5px] text-muted-foreground px-1">Loading…</div>}
         {!isLoading && servers.length === 0 && (
           <div className="rounded-2xl border border-border/70 bg-card/40 px-4 py-6 text-center">
             <ServerIcon className="mx-auto h-6 w-6 text-muted-foreground" />
             <p className="mt-2 text-[13px] text-muted-foreground">
-              No servers registered. Add one to enable remote-agent execution.
+              No servers registered. Until you connect one, the agent stays in mock/dry-run mode.
             </p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-[12.5px]"
+            >
+              <Plus className="h-3.5 w-3.5" /> Connect a server
+            </button>
           </div>
         )}
-        {servers.map((s) => (
-          <div key={s.id} className="rounded-2xl border border-border/70 bg-card/70 p-3.5">
-            <div className="flex items-start gap-2">
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60">
-                <ServerIcon className="h-4 w-4 text-foreground/80" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-medium">{s.name}</span>
-                  <span
-                    className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${
-                      s.status === "online"
-                        ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-                        : "text-muted-foreground bg-secondary/40 border-border/60"
-                    }`}
-                  >
-                    {s.status}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-border/60 text-muted-foreground">
-                    {s.adapter_mode}
-                  </span>
-                  {!s.enabled && (
-                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-amber-500/30 text-amber-400 bg-amber-500/10">
-                      disabled
+        {servers.map((s) => {
+          const ping = pingResult[s.id];
+          const smokeRes = smokeResults[s.id];
+          const smokeErr = smokeErrors[s.id];
+          const isOpen = openSmokeId === s.id;
+          const ready = s.enabled && s.adapter_mode === "remote-agent";
+          return (
+            <div key={s.id} className="rounded-2xl border border-border/70 bg-card/70 p-3.5">
+              <div className="flex items-start gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-secondary/60">
+                  <ServerIcon className="h-4 w-4 text-foreground/80" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[14px] font-medium">{s.name}</span>
+                    <span
+                      className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${
+                        s.status === "online"
+                          ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                          : s.status === "offline"
+                            ? "text-rose-400 bg-rose-500/10 border-rose-500/30"
+                            : "text-muted-foreground bg-secondary/40 border-border/60"
+                      }`}
+                    >
+                      {s.status}
                     </span>
+                    <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-border/60 text-muted-foreground">
+                      {s.adapter_mode}
+                    </span>
+                    {!s.enabled && (
+                      <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border border-amber-500/30 text-amber-400 bg-amber-500/10">
+                        disabled
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-0.5 text-[11.5px] text-muted-foreground font-mono truncate">
+                    {s.host}
+                  </div>
+                  {s.last_health_at && (
+                    <div className="mt-0.5 text-[10.5px] text-muted-foreground">
+                      Last check: {new Date(s.last_health_at).toLocaleString()}
+                    </div>
                   )}
                 </div>
-                <div className="mt-0.5 text-[11.5px] text-muted-foreground font-mono truncate">
-                  {s.host}
-                </div>
-                {s.last_health_at && (
-                  <div className="mt-0.5 text-[10.5px] text-muted-foreground">
-                    Last check: {new Date(s.last_health_at).toLocaleString()}
-                  </div>
-                )}
               </div>
+
+              {ping && (
+                <div
+                  className={`mt-2.5 flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] ${
+                    ping.ok
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      : "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                  }`}
+                >
+                  {ping.ok ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  ) : (
+                    <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  )}
+                  <span className="break-words">{ping.msg}</span>
+                </div>
+              )}
+
+              {!ready && (
+                <div className="mt-2.5 flex items-start gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[12px] text-amber-300">
+                  <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                  <span>
+                    {!s.enabled
+                      ? "Server is disabled — enable it to run live commands."
+                      : `Adapter is '${s.adapter_mode}'. Switch to 'remote-agent' to talk to a daemon.`}
+                  </span>
+                </div>
+              )}
+
+              <div className="mt-3 flex gap-2 flex-wrap">
+                <button
+                  disabled={health.isPending}
+                  onClick={() => health.mutate(s.id)}
+                  className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-secondary/60 border border-border/60 px-3 py-1.5 text-[12.5px] disabled:opacity-50"
+                >
+                  {health.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Activity className="h-3.5 w-3.5" />
+                  )}
+                  Test connection
+                </button>
+                <button
+                  disabled={smoke.isPending || !ready}
+                  title={ready ? "Run pwd / ls / node --version" : "Enable and set remote-agent first"}
+                  onClick={() => smoke.mutate(s.id)}
+                  className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary/15 text-primary border border-primary/30 px-3 py-1.5 text-[12.5px] disabled:opacity-40"
+                >
+                  {smoke.isPending && openSmokeId === s.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <PlugZap className="h-3.5 w-3.5" />
+                  )}
+                  Smoke test
+                </button>
+                <button
+                  disabled={del.isPending}
+                  onClick={() => {
+                    if (confirm(`Delete server "${s.name}"?`)) del.mutate(s.id);
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-destructive/10 text-destructive border border-destructive/30 px-3 py-1.5 text-[12.5px] disabled:opacity-50"
+                  aria-label="Delete server"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {isOpen && (smokeRes || smokeErr) && (
+                <SmokePanel
+                  result={smokeRes}
+                  error={smokeErr}
+                  onClose={() => setOpenSmokeId(null)}
+                />
+              )}
             </div>
-            <div className="mt-3 flex gap-2">
-              <button
-                disabled={health.isPending}
-                onClick={() => health.mutate(s.id)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-secondary/60 border border-border/60 px-3 py-1.5 text-[12.5px] disabled:opacity-50"
-              >
-                {health.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Activity className="h-3.5 w-3.5" />
-                )}{" "}
-                Ping
-              </button>
-              <button
-                disabled={del.isPending}
-                onClick={() => del.mutate(s.id)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-destructive/10 text-destructive border border-destructive/30 px-3 py-1.5 text-[12.5px] disabled:opacity-50"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </AppShell>
+  );
+}
+
+function SetupHint() {
+  return (
+    <div className="mt-3 rounded-2xl border border-border/70 bg-card/40 px-3 py-2.5 text-[11.5px] text-muted-foreground">
+      <div className="flex items-start gap-1.5">
+        <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-foreground/70" />
+        <div className="space-y-1">
+          <div className="text-foreground/80 font-medium text-[12px]">Connect a remote agent</div>
+          <ol className="list-decimal list-inside space-y-0.5">
+            <li>
+              Run the daemon from <code className="font-mono">server-agent/</code> on your VPS with{" "}
+              <code className="font-mono">DAEMON_TOKEN</code> and{" "}
+              <code className="font-mono">WORKSPACE_ROOT</code> set.
+            </li>
+            <li>Put it behind HTTPS (the URL the app will call).</li>
+            <li>Add the server below, then run <em>Test connection</em> and <em>Smoke test</em>.</li>
+          </ol>
+          <div className="text-[11px]">
+            Tokens and URLs stay server-side. Dangerous commands still require approval.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type SmokeStep = {
+  id: string;
+  label: string;
+  command?: string;
+  ok: boolean;
+  exitCode?: number;
+  stdout?: string;
+  stderr?: string;
+  error?: string;
+  durationMs?: number;
+};
+
+function SmokePanel({
+  result,
+  error,
+  onClose,
+}: {
+  result?: { ok: boolean; steps: SmokeStep[] };
+  error?: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-3 rounded-xl border border-border/70 bg-background/60 p-2.5">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+          Smoke test
+        </span>
+        {result && (
+          <span
+            className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${
+              result.ok
+                ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                : "text-rose-400 bg-rose-500/10 border-rose-500/30"
+            }`}
+          >
+            {result.ok ? "passed" : "failed"}
+          </span>
+        )}
+        <button
+          onClick={onClose}
+          className="ml-auto text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          Close
+        </button>
+      </div>
+      {error && (
+        <div className="flex items-start gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-[12px] text-rose-300">
+          <XCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span className="break-words">{error}</span>
+        </div>
+      )}
+      {result?.steps?.map((step) => (
+        <div
+          key={step.id}
+          className="mt-1.5 rounded-lg border border-border/60 bg-card/40 px-2.5 py-1.5"
+        >
+          <div className="flex items-center gap-1.5 text-[12px]">
+            {step.ok ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+            ) : (
+              <XCircle className="h-3.5 w-3.5 text-rose-400" />
+            )}
+            <span className="font-medium">{step.label}</span>
+            {step.command && (
+              <code className="font-mono text-[11px] text-muted-foreground truncate">
+                {step.command}
+              </code>
+            )}
+            {typeof step.exitCode === "number" && (
+              <span className="ml-auto text-[10.5px] text-muted-foreground">
+                exit {step.exitCode}
+              </span>
+            )}
+          </div>
+          {step.error && (
+            <div className="mt-1 text-[11.5px] text-rose-300 break-words">{step.error}</div>
+          )}
+          {step.stdout && (
+            <pre className="mt-1 max-h-32 overflow-auto rounded bg-background/60 px-2 py-1 text-[11px] font-mono whitespace-pre-wrap">
+              {step.stdout.trim()}
+            </pre>
+          )}
+          {step.stderr && step.stderr.trim() && (
+            <pre className="mt-1 max-h-24 overflow-auto rounded bg-rose-500/10 text-rose-300 px-2 py-1 text-[11px] font-mono whitespace-pre-wrap">
+              {step.stderr.trim()}
+            </pre>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 
