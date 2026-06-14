@@ -565,6 +565,95 @@ export type Database = {
           },
         ]
       }
+      tool_executions: {
+        Row: {
+          adapter_mode: string
+          approval_id: string | null
+          conversation_id: string | null
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          input_summary: string | null
+          payload: Json
+          result: Json | null
+          risk_level: string
+          server_id: string | null
+          started_at: string
+          status: string
+          tool_name: string
+          user_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          adapter_mode?: string
+          approval_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input_summary?: string | null
+          payload?: Json
+          result?: Json | null
+          risk_level: string
+          server_id?: string | null
+          started_at?: string
+          status?: string
+          tool_name: string
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          adapter_mode?: string
+          approval_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input_summary?: string | null
+          payload?: Json
+          result?: Json | null
+          risk_level?: string
+          server_id?: string | null
+          started_at?: string
+          status?: string
+          tool_name?: string
+          user_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tool_executions_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_executions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_executions_server_id_fkey"
+            columns: ["server_id"]
+            isOneToOne: false
+            referencedRelation: "servers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tool_executions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
