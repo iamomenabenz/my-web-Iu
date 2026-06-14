@@ -5,7 +5,7 @@
 import { z } from "zod";
 import type { ToolName } from "./risk";
 
-export type ToolCategory = "planning" | "filesystem" | "shell" | "info" | "web";
+export type ToolCategory = "planning" | "filesystem" | "shell" | "info" | "web" | "browser";
 
 export interface ToolDescriptor {
   name: ToolName;
@@ -14,6 +14,11 @@ export interface ToolDescriptor {
   inputSchema: z.ZodTypeAny;
   /** Default risk if no input-specific override applies. */
   defaultRisk: "safe" | "restricted" | "dangerous";
+  /**
+   * If true, this tool requires an external agent (browser-agent) to be
+   * configured server-side before it can be planned or executed.
+   */
+  requiresBrowserAgent?: boolean;
 }
 
 export const TOOL_REGISTRY: Record<ToolName, ToolDescriptor> = {
@@ -109,9 +114,78 @@ export const TOOL_REGISTRY: Record<ToolName, ToolDescriptor> = {
     }),
     defaultRisk: "restricted",
   },
+  // ---- M9 browser-agent tools (disabled until configured) ----
+  browser_navigate: {
+    name: "browser_navigate",
+    category: "browser",
+    description:
+      "Open a URL in a headless browser session. Requires approval and an enabled browser-agent.",
+    inputSchema: z.object({
+      url: z.string().url().max(2048),
+      reason: z.string().max(500),
+      waitFor: z.enum(["load", "domcontentloaded", "networkidle"]).optional(),
+    }),
+    defaultRisk: "restricted",
+    requiresBrowserAgent: true,
+  },
+  browser_extract: {
+    name: "browser_extract",
+    category: "browser",
+    description:
+      "Extract text or HTML from the active browser page. Requires approval and an enabled browser-agent.",
+    inputSchema: z.object({
+      selector: z.string().min(1).max(500).optional(),
+      format: z.enum(["text", "html"]).optional(),
+      reason: z.string().max(500),
+    }),
+    defaultRisk: "restricted",
+    requiresBrowserAgent: true,
+  },
+  browser_click: {
+    name: "browser_click",
+    category: "browser",
+    description:
+      "Click an element on the active browser page. Requires approval and an enabled browser-agent.",
+    inputSchema: z.object({
+      selector: z.string().min(1).max(500),
+      reason: z.string().max(500),
+    }),
+    defaultRisk: "restricted",
+    requiresBrowserAgent: true,
+  },
+  browser_fill: {
+    name: "browser_fill",
+    category: "browser",
+    description:
+      "Type a value into an input. Refuses password/credential selectors. Requires approval.",
+    inputSchema: z.object({
+      selector: z.string().min(1).max(500),
+      value: z.string().max(2000),
+      reason: z.string().max(500),
+    }),
+    defaultRisk: "restricted",
+    requiresBrowserAgent: true,
+  },
+  browser_screenshot: {
+    name: "browser_screenshot",
+    category: "browser",
+    description:
+      "Capture a screenshot of the current page. Requires approval and an enabled browser-agent.",
+    inputSchema: z.object({
+      url: z.string().url().max(2048).optional(),
+      fullPage: z.boolean().optional(),
+      reason: z.string().max(500),
+    }),
+    defaultRisk: "restricted",
+    requiresBrowserAgent: true,
+  },
 };
 
-/** Tools allowed at each permission level (cumulative). */
+/**
+ * Tools allowed at each permission level (cumulative). Browser tools live in
+ * their own gate (see `toolsForPermission` second argument) and are NEVER
+ * included unless an enabled browser-agent is configured server-side.
+ */
 export const PERMISSION_TIERS = {
   safe: [
     "plan",
@@ -148,8 +222,36 @@ export const PERMISSION_TIERS = {
   ],
 } as const satisfies Record<"safe" | "restricted" | "dangerous", readonly ToolName[]>;
 
+const BROWSER_TOOLS = [
+  "browser_navigate",
+  "browser_extract",
+  "browser_click",
+  "browser_fill",
+  "browser_screenshot",
+] as const satisfies readonly ToolName[];
+
 export type PermissionLevel = keyof typeof PERMISSION_TIERS;
 
-export function toolsForPermission(level: PermissionLevel): ToolName[] {
-  return [...PERMISSION_TIERS[level]];
+/**
+ * Returns the tools the planner is allowed to choose from for a mission.
+ *
+ * `browserAgentEnabled` is determined server-side by `isBrowserAgentEnabled()`
+ * (in `browser-agent.server.ts`). When false (the default — no
+ * `BROWSER_AGENT_URL`/`BROWSER_AGENT_TOKEN` env vars set), browser tools are
+ * never returned, the planner cannot propose them, and the executor will
+ * refuse them even if the model hallucinates one.
+ */
+export function toolsForPermission(
+  level: PermissionLevel,
+  browserAgentEnabled = false,
+): ToolName[] {
+  const base = [...PERMISSION_TIERS[level]];
+  if (browserAgentEnabled && level !== "safe") {
+    return [...base, ...BROWSER_TOOLS];
+  }
+  return base;
+}
+
+export function isBrowserTool(tool: ToolName): boolean {
+  return TOOL_REGISTRY[tool].requiresBrowserAgent === true;
 }

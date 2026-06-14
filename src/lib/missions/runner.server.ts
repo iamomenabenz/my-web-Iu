@@ -8,6 +8,7 @@ import { buildPlannerSystemPrompt, buildPlannerUserPrompt } from "./prompts.serv
 import { PERMISSION_TIERS, TOOL_REGISTRY, type PermissionLevel } from "@/lib/tools/registry";
 import type { ToolName } from "@/lib/tools/risk";
 import { executeTool, type AdapterMode } from "@/lib/tools/executor.server";
+import { isBrowserAgentEnabled } from "@/lib/tools/browser-agent.server";
 
 interface MissionRow {
   id: string;
@@ -97,6 +98,16 @@ export async function planMission(missionId: string): Promise<{
   }
 
   const allowed = new Set<string>(PERMISSION_TIERS[level]);
+  if (isBrowserAgentEnabled() && level !== "safe") {
+    for (const t of [
+      "browser_navigate",
+      "browser_extract",
+      "browser_click",
+      "browser_fill",
+      "browser_screenshot",
+    ])
+      allowed.add(t);
+  }
   const steps = (planJson?.steps ?? [])
     .filter((s) => s && typeof s.tool_name === "string" && allowed.has(s.tool_name))
     .slice(0, 8);

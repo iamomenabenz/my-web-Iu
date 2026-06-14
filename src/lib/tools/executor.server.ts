@@ -6,6 +6,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classifyRisk, summarizeInput, type ToolName } from "./risk";
+import { isBrowserTool } from "./registry";
 import {
   daemonDeleteFile,
   daemonExec,
@@ -18,6 +19,14 @@ import {
   resolveDaemonConfig,
   type DaemonConfig,
 } from "./remote-agent.server";
+import {
+  browserClick,
+  browserExtract,
+  browserFill,
+  browserNavigate,
+  browserScreenshot,
+  resolveBrowserAgentConfig,
+} from "./browser-agent.server";
 
 export type AdapterMode = "mock" | "dry-run" | "remote-agent" | "ssh" | "self-hosted-local";
 
@@ -292,6 +301,34 @@ export async function executeApproved(
   const summary = summarizeInput(tool, input);
   const risk = classifyRisk({ tool, input }).risk;
 
+  // M9 browser-agent path — gated by env config.
+  if (isBrowserTool(tool)) {
+    const cfg = resolveBrowserAgentConfig();
+    if (!cfg) {
+      const note =
+        "Browser agent is not configured on this deployment. Set BROWSER_AGENT_URL and BROWSER_AGENT_TOKEN to enable.";
+      await recordExecution({
+        ctx,
+        tool,
+        risk,
+        summary,
+        status: "error",
+        payload: input,
+        error: note,
+        approvalId: opts.approvalId ?? null,
+      });
+      return { ok: false, mode: ctx.adapterMode, risk, summary, note };
+    }
+    await audit(ctx, "approval.execution_started", opts.approvalId ?? "approved-tool", {
+      tool,
+      risk,
+      summary,
+      status: "running",
+      target: "browser-agent",
+    });
+    return runBrowserTool(tool, input, ctx, summary, risk, opts.approvalId ?? null);
+  }
+
   if (ctx.adapterMode === "remote-agent") {
     const cfg = await resolveDaemonConfig(ctx.workspaceId);
     if (!cfg) {
@@ -321,6 +358,76 @@ export async function executeApproved(
     input,
     note: "Approval recorded. Configure a remote-agent server in Settings → Servers for real execution.",
   });
+}
+
+async function runBrowserTool(
+  tool: ToolName,
+  input: Record<string, unknown>,
+  ctx: ExecContext,
+  summary: string,
+  risk: "safe" | "restricted" | "dangerous",
+  approvalId: string | null,
+): Promise<ToolResult> {
+  const cfg = resolveBrowserAgentConfig();
+  if (!cfg) {
+    return {
+      ok: false,
+      mode: ctx.adapterMode,
+      risk,
+      summary,
+      note: "Browser agent not configured.",
+    };
+  }
+  let r:
+    | Awaited<ReturnType<typeof browserNavigate>>
+    | Awaited<ReturnType<typeof browserExtract>>
+    | Awaited<ReturnType<typeof browserClick>>
+    | Awaited<ReturnType<typeof browserFill>>
+    | Awaited<ReturnType<typeof browserScreenshot>>;
+  if (tool === "browser_navigate") {
+    r = await browserNavigate(cfg, {
+      url: String(input.url ?? ""),
+      waitFor: input.waitFor as "load" | "domcontentloaded" | "networkidle" | undefined,
+    });
+  } else if (tool === "browser_extract") {
+    r = await browserExtract(cfg, {
+      selector: typeof input.selector === "string" ? input.selector : undefined,
+      format: input.format as "text" | "html" | undefined,
+    });
+  } else if (tool === "browser_click") {
+    r = await browserClick(cfg, { selector: String(input.selector ?? "") });
+  } else if (tool === "browser_fill") {
+    r = await browserFill(cfg, {
+      selector: String(input.selector ?? ""),
+      value: String(input.value ?? ""),
+    });
+  } else if (tool === "browser_screenshot") {
+    r = await browserScreenshot(cfg, {
+      url: typeof input.url === "string" ? input.url : undefined,
+      fullPage: typeof input.fullPage === "boolean" ? input.fullPage : undefined,
+    });
+  } else {
+    return { ok: false, mode: ctx.adapterMode, risk, summary, note: "Unknown browser tool." };
+  }
+  await audit(ctx, `tool.${tool}.browser`, "browser-agent", { summary, ok: r.ok });
+  // Strip large binary fields from stored result.
+  const stored =
+    tool === "browser_screenshot" && r.ok && r.data
+      ? { ...(r.data as Record<string, unknown>), base64: "[stripped]" }
+      : r.data;
+  await recordExecution({
+    ctx,
+    tool,
+    risk,
+    summary,
+    status: r.ok ? "success" : "error",
+    payload: input,
+    result: stored,
+    error: r.error ?? null,
+    approvalId,
+  });
+  if (!r.ok) return { ok: false, mode: ctx.adapterMode, risk, summary, note: r.error };
+  return { ok: true, mode: ctx.adapterMode, risk, summary, data: stored };
 }
 
 async function runReadOnlyRemote(
