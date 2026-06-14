@@ -66,7 +66,7 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
     // Log details for developers only; do not include raw body in thrown error.
     try {
       const body = await res.text();
-      // eslint-disable-next-line no-console
+
       console.error(`[api] ${init?.method ?? "GET"} ${path} failed`, res.status, body);
     } catch {
       /* ignore */
